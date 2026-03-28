@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>simple-chat — Design Direction Exploration</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #16213e;
+    border-bottom: 1px solid #0f3460;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    z-index: 1000;
+  }
+  .nav h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #25D366;
+    white-space: nowrap;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 8px;
+  }
+  .nav-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid #0f3460;
+    background: transparent;
+    color: #a0a0b0;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 150ms ease;
+  }
+  .nav-tab:hover { background: #0f3460; color: #fff; }
+  .nav-tab.active { background: #128C7E; color: #fff; border-color: #128C7E; }
+
+  .content { padding-top: 72px; }
+
+  /* Section */
+  .direction {
+    display: none;
+    padding: 32px;
+  }
+  .direction.active { display: block; }
+  .direction-header {
+    max-width: 900px;
+    margin: 0 auto 32px;
+  }
+  .direction-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .direction-header p {
+    font-size: 15px;
+    color: #8696A0;
+    line-height: 1.5;
+  }
+  .direction-header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 8px;
+    margin-top: 12px;
+  }
+  .tag-bubble { background: #075E54; color: #25D366; }
+  .tag-sidebar { background: #1a1a4e; color: #7c8aff; }
+  .tag-header { background: #3d1a1a; color: #ff7c7c; }
+
+  /* Mockup Frame */
+  .mockup-frame {
+    max-width: 1100px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border: 1px solid #333;
+  }
+
+  /* ========================================
+     DIRECTION A: Classic WhatsApp Warmth
+     ======================================== */
+  .dir-a .app {
+    display: flex;
+    height: 640px;
+    background: #F0F2F5;
+  }
+  /* Sidebar */
+  .dir-a .sidebar {
+    width: 320px;
+    background: #FFFFFF;
+    border-right: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-a .sidebar-header {
+    background: #075E54;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .dir-a .sidebar-header h3 {
+    color: #FFFFFF;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .dir-a .sidebar-header .actions {
+    display: flex;
+    gap: 16px;
+  }
+  .dir-a .sidebar-header .action-btn {
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .dir-a .search-bar {
+    padding: 8px 12px;
+    background: #F0F2F5;
+  }
+  .dir-a .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    background: #FFFFFF;
+    font-size: 14px;
+    color: #111B21;
+    font-family: inherit;
+  }
+  .dir-a .search-input::placeholder { color: #8696A0; }
+  .dir-a .conv-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .dir-a .conv-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #F0F2F5;
+    transition: background 150ms ease;
+  }
+  .dir-a .conv-item:hover { background: #F0F2F5; }
+  .dir-a .conv-item.active { background: #E4E6EB; }
+  .dir-a .conv-item.unread .conv-name { font-weight: 600; }
+  .dir-a .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 500;
+    color: #FFFFFF;
+    flex-shrink: 0;
+    margin-right: 12px;
+    position: relative;
+  }
+  .dir-a .presence-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #FFFFFF;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+  .dir-a .presence-dot.online { background: #25D366; }
+  .dir-a .presence-dot.away { background: #F59E0B; }
+  .dir-a .conv-info { flex: 1; min-width: 0; }
+  .dir-a .conv-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .dir-a .conv-name { font-size: 15px; color: #111B21; font-weight: 400; }
+  .dir-a .conv-time { font-size: 12px; color: #667781; }
+  .dir-a .conv-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  .dir-a .conv-preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .dir-a .unread-badge {
+    background: #128C7E;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* Chat Area */
+  .dir-a .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #E5DDD5;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 Q35 15 30 25 Q25 15 30 5z' fill='%23d4ccb8' opacity='0.15'/%3E%3C/svg%3E");
+  }
+  .dir-a .chat-header {
+    background: #075E54;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+  }
+  .dir-a .chat-header .avatar { width: 36px; height: 36px; font-size: 14px; margin-right: 0; }
+  .dir-a .chat-header-info h4 { color: #FFFFFF; font-size: 15px; font-weight: 500; }
+  .dir-a .chat-header-info span { color: rgba(255,255,255,0.7); font-size: 12px; }
+  .dir-a .messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .dir-a .msg {
+    max-width: 65%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14.2px;
+    line-height: 1.47;
+    position: relative;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+  }
+  .dir-a .msg-other {
+    background: #FFFFFF;
+    color: #111B21;
+    align-self: flex-start;
+    border-top-left-radius: 0;
+  }
+  .dir-a .msg-own {
+    background: #DCF8C6;
+    color: #111B21;
+    align-self: flex-end;
+    border-top-right-radius: 0;
+  }
+  .dir-a .msg-sender {
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .dir-a .msg-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .dir-a .msg-time { font-size: 11px; color: #667781; }
+  .dir-a .msg-check { font-size: 12px; color: #128C7E; }
+  .dir-a .msg-gap { margin-top: 12px; }
+  .dir-a .msg-system {
+    align-self: center;
+    background: #FFF3CD;
+    color: #856404;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    max-width: 80%;
+    text-align: center;
+    margin: 8px 0;
+  }
+  .dir-a .chat-input {
+    padding: 8px 12px;
+    background: #F0F2F5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dir-a .attach-btn {
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: #667781;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .dir-a .msg-input {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 24px;
+    border: none;
+    background: #FFFFFF;
+    font-size: 15px;
+    font-family: inherit;
+    color: #111B21;
+  }
+  .dir-a .msg-input::placeholder { color: #8696A0; }
+  .dir-a .send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #128C7E;
+    border: none;
+    color: #FFFFFF;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Members Panel */
+  .dir-a .members-panel {
+    width: 240px;
+    background: #FFFFFF;
+    border-left: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-a .members-header {
+    padding: 16px;
+    border-bottom: 1px solid #E5E7EB;
+    height: 56px;
+    display: flex;
+    align-items: center;
+  }
+  .dir-a .members-header h4 { font-size: 14px; color: #111B21; font-weight: 500; }
+  .dir-a .members-section {
+    padding: 12px 16px 4px;
+    font-size: 12px;
+    color: #128C7E;
+    font-weight: 600;
+    text-transform: lowercase;
+  }
+  .dir-a .member-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    gap: 10px;
+  }
+  .dir-a .member-item .avatar { width: 32px; height: 32px; font-size: 12px; margin-right: 0; }
+  .dir-a .member-name { font-size: 14px; color: #111B21; }
+
+  /* ========================================
+     DIRECTION B: Airy & Modern
+     ======================================== */
+  .dir-b .app {
+    display: flex;
+    height: 640px;
+    background: #F8FAFB;
+  }
+  .dir-b .sidebar {
+    width: 320px;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-b .sidebar-header {
+    padding: 20px 20px 12px;
+    height: auto;
+  }
+  .dir-b .sidebar-header h3 {
+    color: #111B21;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .dir-b .sidebar-header .subtitle {
+    font-size: 13px;
+    color: #8696A0;
+    margin-top: 2px;
+  }
+  .dir-b .search-bar {
+    padding: 0 16px 12px;
+  }
+  .dir-b .search-input {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1.5px solid #E5E7EB;
+    background: #F8FAFB;
+    font-size: 14px;
+    color: #111B21;
+    font-family: inherit;
+    transition: border-color 150ms;
+  }
+  .dir-b .search-input:focus { border-color: #128C7E; outline: none; }
+  .dir-b .search-input::placeholder { color: #8696A0; }
+  .dir-b .conv-list { flex: 1; overflow-y: auto; padding: 0 8px; }
+  .dir-b .conv-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    margin-bottom: 2px;
+    transition: background 150ms ease;
+  }
+  .dir-b .conv-item:hover { background: #F0F2F5; }
+  .dir-b .conv-item.active { background: #E8F5E9; }
+  .dir-b .conv-item.unread .conv-name { font-weight: 600; }
+  .dir-b .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: #FFFFFF;
+    flex-shrink: 0;
+    margin-right: 12px;
+    position: relative;
+  }
+  .dir-b .presence-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #FFFFFF;
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+  }
+  .dir-b .presence-dot.online { background: #25D366; }
+  .dir-b .presence-dot.away { background: #F59E0B; }
+  .dir-b .conv-info { flex: 1; min-width: 0; }
+  .dir-b .conv-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .dir-b .conv-name { font-size: 15px; color: #111B21; }
+  .dir-b .conv-time { font-size: 12px; color: #8696A0; }
+  .dir-b .conv-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; }
+  .dir-b .conv-preview { font-size: 13px; color: #8696A0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .dir-b .unread-badge {
+    background: #128C7E;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 600;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dir-b .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    margin: 8px 0;
+    border-radius: 0;
+  }
+  .dir-b .chat-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #F0F2F5;
+    height: 64px;
+    background: #FFFFFF;
+  }
+  .dir-b .chat-header .avatar { width: 36px; height: 36px; font-size: 14px; margin-right: 0; }
+  .dir-b .chat-header-info h4 { color: #111B21; font-size: 16px; font-weight: 600; }
+  .dir-b .chat-header-info span { color: #25D366; font-size: 12px; }
+  .dir-b .messages {
+    flex: 1;
+    padding: 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #FAFBFC;
+  }
+  .dir-b .msg {
+    max-width: 60%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.47;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .dir-b .msg-other {
+    background: #FFFFFF;
+    color: #111B21;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .dir-b .msg-own {
+    background: #128C7E;
+    color: #FFFFFF;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .dir-b .msg-own .msg-time { color: rgba(255,255,255,0.7); }
+  .dir-b .msg-own .msg-check { color: rgba(255,255,255,0.8); }
+  .dir-b .msg-sender { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; color: #128C7E; }
+  .dir-b .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+  .dir-b .msg-time { font-size: 11px; color: #8696A0; }
+  .dir-b .msg-check { font-size: 12px; color: #128C7E; }
+  .dir-b .msg-gap { margin-top: 16px; }
+  .dir-b .msg-system {
+    align-self: center;
+    background: #F0F2F5;
+    color: #667781;
+    font-size: 12px;
+    padding: 6px 16px;
+    border-radius: 16px;
+    margin: 12px 0;
+  }
+  .dir-b .chat-input {
+    padding: 12px 16px;
+    background: #FFFFFF;
+    border-top: 1px solid #F0F2F5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dir-b .attach-btn {
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: #8696A0;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .dir-b .msg-input {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 16px;
+    border: 1.5px solid #E5E7EB;
+    background: #F8FAFB;
+    font-size: 15px;
+    font-family: inherit;
+    color: #111B21;
+    transition: border-color 150ms;
+  }
+  .dir-b .msg-input:focus { border-color: #128C7E; outline: none; }
+  .dir-b .msg-input::placeholder { color: #8696A0; }
+  .dir-b .send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #128C7E;
+    border: none;
+    color: #FFFFFF;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .dir-b .members-panel {
+    width: 240px;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-b .members-header {
+    padding: 20px 16px 12px;
+    height: auto;
+  }
+  .dir-b .members-header h4 { font-size: 14px; color: #111B21; font-weight: 600; }
+  .dir-b .members-section {
+    padding: 12px 16px 4px;
+    font-size: 11px;
+    color: #8696A0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .dir-b .member-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    gap: 10px;
+  }
+  .dir-b .member-item .avatar { width: 30px; height: 30px; font-size: 11px; margin-right: 0; border-radius: 10px; }
+  .dir-b .member-name { font-size: 14px; color: #111B21; }
+
+  /* ========================================
+     DIRECTION C: Compact & Efficient
+     ======================================== */
+  .dir-c .app {
+    display: flex;
+    height: 640px;
+    background: #F0F2F5;
+  }
+  .dir-c .sidebar {
+    width: 300px;
+    background: #FFFFFF;
+    border-right: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-c .sidebar-header {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .dir-c .sidebar-header h3 {
+    color: #128C7E;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .dir-c .sidebar-header .action-btn {
+    color: #667781;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    background: none;
+    font-family: inherit;
+  }
+  .dir-c .search-bar { padding: 6px 8px; }
+  .dir-c .search-input {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid #E5E7EB;
+    background: #F8FAFB;
+    font-size: 13px;
+    color: #111B21;
+    font-family: inherit;
+  }
+  .dir-c .search-input::placeholder { color: #8696A0; }
+  .dir-c .conv-list { flex: 1; overflow-y: auto; }
+  .dir-c .conv-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #F5F5F5;
+    transition: background 150ms ease;
+  }
+  .dir-c .conv-item:hover { background: #F8FAFB; }
+  .dir-c .conv-item.active { background: #E8F5E9; border-left: 3px solid #128C7E; }
+  .dir-c .conv-item.unread .conv-name { font-weight: 600; }
+  .dir-c .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #FFFFFF;
+    flex-shrink: 0;
+    margin-right: 10px;
+    position: relative;
+  }
+  .dir-c .presence-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #FFFFFF;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+  .dir-c .presence-dot.online { background: #25D366; }
+  .dir-c .presence-dot.away { background: #F59E0B; }
+  .dir-c .conv-info { flex: 1; min-width: 0; }
+  .dir-c .conv-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .dir-c .conv-name { font-size: 14px; color: #111B21; }
+  .dir-c .conv-time { font-size: 11px; color: #8696A0; }
+  .dir-c .conv-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 1px; }
+  .dir-c .conv-preview { font-size: 12px; color: #8696A0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .dir-c .unread-badge {
+    background: #128C7E;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .dir-c .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+  }
+  .dir-c .chat-header {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    border-bottom: 1px solid #E5E7EB;
+    background: #FAFBFC;
+  }
+  .dir-c .chat-header .avatar { width: 32px; height: 32px; font-size: 12px; margin-right: 0; }
+  .dir-c .chat-header-info h4 { color: #111B21; font-size: 14px; font-weight: 600; }
+  .dir-c .chat-header-info span { color: #667781; font-size: 11px; }
+  .dir-c .members-toggle {
+    margin-left: auto;
+    padding: 4px 10px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    background: none;
+    color: #667781;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .dir-c .messages {
+    flex: 1;
+    padding: 12px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #FFFFFF;
+  }
+  .dir-c .msg {
+    max-width: 70%;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.43;
+  }
+  .dir-c .msg-other {
+    background: #F0F2F5;
+    color: #111B21;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+  }
+  .dir-c .msg-own {
+    background: #DCF8C6;
+    color: #111B21;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+  }
+  .dir-c .msg-sender { font-size: 12px; font-weight: 600; margin-bottom: 1px; color: #075E54; }
+  .dir-c .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 1px; }
+  .dir-c .msg-time { font-size: 10px; color: #8696A0; }
+  .dir-c .msg-check { font-size: 11px; color: #128C7E; }
+  .dir-c .msg-gap { margin-top: 8px; }
+  .dir-c .msg-system {
+    align-self: center;
+    color: #8696A0;
+    font-size: 11px;
+    padding: 4px 0;
+    margin: 4px 0;
+  }
+  .dir-c .chat-input {
+    padding: 6px 12px;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #FAFBFC;
+  }
+  .dir-c .attach-btn {
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: #8696A0;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .dir-c .msg-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    font-size: 14px;
+    font-family: inherit;
+    color: #111B21;
+  }
+  .dir-c .msg-input::placeholder { color: #8696A0; }
+  .dir-c .send-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #128C7E;
+    border: none;
+    color: #FFFFFF;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+
+  .dir-c .members-panel {
+    width: 220px;
+    background: #FAFBFC;
+    border-left: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+  }
+  .dir-c .members-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #E5E7EB;
+    height: 48px;
+    display: flex;
+    align-items: center;
+  }
+  .dir-c .members-header h4 { font-size: 13px; color: #667781; font-weight: 600; }
+  .dir-c .members-section {
+    padding: 8px 12px 2px;
+    font-size: 10px;
+    color: #8696A0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .dir-c .member-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    gap: 8px;
+  }
+  .dir-c .member-item .avatar { width: 28px; height: 28px; font-size: 10px; margin-right: 0; }
+  .dir-c .member-name { font-size: 13px; color: #111B21; }
+
+  /* Comparison section */
+  .comparison {
+    display: none;
+    padding: 32px;
+  }
+  .comparison.active { display: block; }
+  .comparison h2 {
+    text-align: center;
+    font-size: 24px;
+    color: #fff;
+    margin-bottom: 32px;
+  }
+  .comparison-table {
+    max-width: 900px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .comparison-table th,
+  .comparison-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #2a2a4e;
+    font-size: 14px;
+  }
+  .comparison-table th {
+    color: #8696A0;
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .comparison-table td { color: #e0e0e0; }
+  .comparison-table tr:hover td { background: rgba(18, 140, 126, 0.05); }
+  .highlight { color: #25D366; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h1>simple-chat designs</h1>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('a')">A: Classic Warmth</button>
+    <button class="nav-tab" onclick="showTab('b')">B: Airy Modern</button>
+    <button class="nav-tab" onclick="showTab('c')">C: Compact Efficient</button>
+    <button class="nav-tab" onclick="showTab('compare')">Compare</button>
+  </div>
+</nav>
+
+<div class="content">
+
+  <!-- DIRECTION A: Classic WhatsApp Warmth -->
+  <div id="tab-a" class="direction active">
+    <div class="direction-header">
+      <h2>Direction A: Classic WhatsApp Warmth</h2>
+      <p>Closest to WhatsApp's visual language. Dark teal headers, textured chat background, green-tinted own bubbles on parchment. Maximum familiarity — Sarah would feel instantly at home.</p>
+      <span class="tag tag-bubble">Rounded bubbles with tail</span>
+      <span class="tag tag-sidebar">Colored header</span>
+      <span class="tag tag-header">Textured chat bg</span>
+    </div>
+    <div class="mockup-frame dir-a">
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-header">
+            <h3>Chats</h3>
+            <div class="actions">
+              <span class="action-btn">+ New Chat</span>
+            </div>
+          </div>
+          <div class="search-bar">
+            <input type="text" class="search-input" placeholder="🔍 Search or start new chat" readonly>
+          </div>
+          <div class="conv-list">
+            <div class="conv-item active unread">
+              <div class="avatar" style="background:#4E8B7C">E<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Engineering</span><span class="conv-time">10:42 AM</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Marcus: The deploy looks good, no issues</span><span class="unread-badge">3</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#7C4E8B">S<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Sarah Chen</span><span class="conv-time">9:15 AM</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Can you review the client deck?</span></div>
+              </div>
+            </div>
+            <div class="conv-item unread">
+              <div class="avatar" style="background:#8B7C4E">G<div class="presence-dot away"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">General</span><span class="conv-time">Yesterday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Alex: Office wifi will be down at 3pm</span><span class="unread-badge">1</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#4E6B8B">P</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Priya Sharma</span><span class="conv-time">Yesterday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Thanks for the help with the setup!</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#8B4E6B">D</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Design</span><span class="conv-time">Mon</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Sally: Updated mockups are in the shared...</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-area">
+          <div class="chat-header">
+            <div class="avatar" style="background:#4E8B7C;font-size:14px">E</div>
+            <div class="chat-header-info">
+              <h4>Engineering</h4>
+              <span>Marcus, Priya, Alex, +2 others</span>
+            </div>
+          </div>
+          <div class="messages">
+            <div class="msg-system">Priya joined the group</div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender" style="color:#4E8B7C">Marcus</div>
+              Just finished the API review. Everything looks solid.
+              <div class="msg-meta"><span class="msg-time">10:38 AM</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender" style="color:#4E6B8B">Priya</div>
+              Great! I had a question about the auth flow though
+              <div class="msg-meta"><span class="msg-time">10:39 AM</span></div>
+            </div>
+            <div class="msg msg-own msg-gap">
+              Sure, what's the question?
+              <div class="msg-meta"><span class="msg-time">10:40 AM</span><span class="msg-check">✓</span></div>
+            </div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender" style="color:#4E6B8B">Priya</div>
+              How does the refresh token rotation work? I see the endpoint but the flow isn't clear
+              <div class="msg-meta"><span class="msg-time">10:41 AM</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender" style="color:#4E8B7C">Marcus</div>
+              The deploy looks good, no issues on staging
+              <div class="msg-meta"><span class="msg-time">10:42 AM</span></div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <button class="attach-btn">📎 Attach</button>
+            <input type="text" class="msg-input" placeholder="Type a message" readonly>
+            <button class="send-btn">➤</button>
+          </div>
+        </div>
+        <div class="members-panel">
+          <div class="members-header"><h4>Members · 5</h4></div>
+          <div class="members-section">online — 3</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E8B7C">M<div class="presence-dot online"></div></div>
+            <span class="member-name">Marcus</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E6B8B">P<div class="presence-dot online"></div></div>
+            <span class="member-name">Priya</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#7C4E8B">Y<div class="presence-dot online"></div></div>
+            <span class="member-name">You</span>
+          </div>
+          <div class="members-section">away — 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B7C4E">A<div class="presence-dot away"></div></div>
+            <span class="member-name">Alex</span>
+          </div>
+          <div class="members-section">offline — 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B4E6B">J</div>
+            <span class="member-name">Jordan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION B: Airy & Modern -->
+  <div id="tab-b" class="direction">
+    <div class="direction-header">
+      <h2>Direction B: Airy & Modern</h2>
+      <p>More breathing room, softer edges, white-dominant with teal accents. Own messages use primary teal background (not green tint). Feels more like a modern web app — Linear meets WhatsApp. Rounded-square avatars add a contemporary touch.</p>
+      <span class="tag tag-bubble">Full-round bubbles, teal own</span>
+      <span class="tag tag-sidebar">White header, bold title</span>
+      <span class="tag tag-header">Clean white chat bg</span>
+    </div>
+    <div class="mockup-frame dir-b">
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-header">
+            <h3>Chats</h3>
+            <div class="subtitle">5 conversations</div>
+          </div>
+          <div class="search-bar">
+            <input type="text" class="search-input" placeholder="Search messages... ⌘K" readonly>
+          </div>
+          <div class="conv-list">
+            <div class="conv-item active unread">
+              <div class="avatar" style="background:#4E8B7C">E<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Engineering</span><span class="conv-time">10:42 AM</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Marcus: The deploy looks good</span><span class="unread-badge">3</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#7C4E8B">SC<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Sarah Chen</span><span class="conv-time">9:15 AM</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Can you review the client deck?</span></div>
+              </div>
+            </div>
+            <div class="conv-item unread">
+              <div class="avatar" style="background:#8B7C4E">G<div class="presence-dot away"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">General</span><span class="conv-time">Yesterday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Alex: Office wifi will be down at 3pm</span><span class="unread-badge">1</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#4E6B8B">PS</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Priya Sharma</span><span class="conv-time">Yesterday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Thanks for the help!</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#8B4E6B">D</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Design</span><span class="conv-time">Mon</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Sally: Updated mockups are in...</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-area">
+          <div class="chat-header">
+            <div class="avatar" style="background:#4E8B7C;font-size:14px;border-radius:10px">E</div>
+            <div class="chat-header-info">
+              <h4>Engineering</h4>
+              <span>● 3 online</span>
+            </div>
+          </div>
+          <div class="messages">
+            <div class="msg-system">Priya joined the group</div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender">Marcus</div>
+              Just finished the API review. Everything looks solid.
+              <div class="msg-meta"><span class="msg-time">10:38 AM</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender">Priya</div>
+              Great! I had a question about the auth flow though
+              <div class="msg-meta"><span class="msg-time">10:39 AM</span></div>
+            </div>
+            <div class="msg msg-own msg-gap">
+              Sure, what's the question?
+              <div class="msg-meta"><span class="msg-time">10:40 AM</span><span class="msg-check">✓</span></div>
+            </div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender">Priya</div>
+              How does the refresh token rotation work? I see the endpoint but the flow isn't clear
+              <div class="msg-meta"><span class="msg-time">10:41 AM</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender">Marcus</div>
+              The deploy looks good, no issues on staging
+              <div class="msg-meta"><span class="msg-time">10:42 AM</span></div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <button class="attach-btn">📎 Attach</button>
+            <input type="text" class="msg-input" placeholder="Type a message..." readonly>
+            <button class="send-btn">➤</button>
+          </div>
+        </div>
+        <div class="members-panel">
+          <div class="members-header"><h4>Members</h4></div>
+          <div class="members-section">ONLINE — 3</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E8B7C">M<div class="presence-dot online"></div></div>
+            <span class="member-name">Marcus</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E6B8B">P<div class="presence-dot online"></div></div>
+            <span class="member-name">Priya</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#7C4E8B">Y<div class="presence-dot online"></div></div>
+            <span class="member-name">You</span>
+          </div>
+          <div class="members-section">AWAY — 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B7C4E">A<div class="presence-dot away"></div></div>
+            <span class="member-name">Alex</span>
+          </div>
+          <div class="members-section">OFFLINE — 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B4E6B">J</div>
+            <span class="member-name">Jordan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION C: Compact & Efficient -->
+  <div id="tab-c" class="direction">
+    <div class="direction-header">
+      <h2>Direction C: Compact & Efficient</h2>
+      <p>Maximum information density with minimal chrome. Smaller avatars, tighter spacing, subtle active indicator (left border). Green-tinted own bubbles on white. For teams that value efficiency over visual warmth — Marcus's preference. Text "Send" button instead of icon.</p>
+      <span class="tag tag-bubble">Compact bubbles, gray other</span>
+      <span class="tag tag-sidebar">Minimal header, left-border active</span>
+      <span class="tag tag-header">Clean white, no texture</span>
+    </div>
+    <div class="mockup-frame dir-c">
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-header">
+            <h3>simple-chat</h3>
+            <button class="action-btn">+ New</button>
+          </div>
+          <div class="search-bar">
+            <input type="text" class="search-input" placeholder="Search... ⌘K" readonly>
+          </div>
+          <div class="conv-list">
+            <div class="conv-item active unread">
+              <div class="avatar" style="background:#4E8B7C">E<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Engineering</span><span class="conv-time">10:42</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Marcus: The deploy looks good</span><span class="unread-badge">3</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#7C4E8B">SC<div class="presence-dot online"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Sarah Chen</span><span class="conv-time">09:15</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Can you review the client deck?</span></div>
+              </div>
+            </div>
+            <div class="conv-item unread">
+              <div class="avatar" style="background:#8B7C4E">G<div class="presence-dot away"></div></div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">General</span><span class="conv-time">Yday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Alex: Office wifi down at 3pm</span><span class="unread-badge">1</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#4E6B8B">PS</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Priya Sharma</span><span class="conv-time">Yday</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Thanks for the help!</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#8B4E6B">D</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Design</span><span class="conv-time">Mon</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Sally: Updated mockups</span></div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="avatar" style="background:#5B8B4E">M</div>
+              <div class="conv-info">
+                <div class="conv-top"><span class="conv-name">Marketing</span><span class="conv-time">Fri</span></div>
+                <div class="conv-bottom"><span class="conv-preview">Launch prep next week</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-area">
+          <div class="chat-header">
+            <div class="avatar" style="background:#4E8B7C;font-size:12px">E</div>
+            <div class="chat-header-info">
+              <h4>Engineering</h4>
+              <span>5 members · 3 online</span>
+            </div>
+            <button class="members-toggle">Members ▸</button>
+          </div>
+          <div class="messages">
+            <div class="msg-system">— Priya joined —</div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender">Marcus</div>
+              Just finished the API review. Everything looks solid.
+              <div class="msg-meta"><span class="msg-time">10:38</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender">Priya</div>
+              Great! I had a question about the auth flow though
+              <div class="msg-meta"><span class="msg-time">10:39</span></div>
+            </div>
+            <div class="msg msg-own msg-gap">
+              Sure, what's the question?
+              <div class="msg-meta"><span class="msg-time">10:40</span><span class="msg-check">✓</span></div>
+            </div>
+            <div class="msg msg-other msg-gap">
+              <div class="msg-sender">Priya</div>
+              How does the refresh token rotation work? I see the endpoint but the flow isn't clear
+              <div class="msg-meta"><span class="msg-time">10:41</span></div>
+            </div>
+            <div class="msg msg-other">
+              <div class="msg-sender">Marcus</div>
+              The deploy looks good, no issues on staging
+              <div class="msg-meta"><span class="msg-time">10:42</span></div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <button class="attach-btn">📎</button>
+            <input type="text" class="msg-input" placeholder="Type a message..." readonly>
+            <button class="send-btn">Send</button>
+          </div>
+        </div>
+        <div class="members-panel">
+          <div class="members-header"><h4>Members</h4></div>
+          <div class="members-section">ONLINE · 3</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E8B7C">M<div class="presence-dot online"></div></div>
+            <span class="member-name">Marcus</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#4E6B8B">P<div class="presence-dot online"></div></div>
+            <span class="member-name">Priya</span>
+          </div>
+          <div class="member-item">
+            <div class="avatar" style="background:#7C4E8B">Y<div class="presence-dot online"></div></div>
+            <span class="member-name">You</span>
+          </div>
+          <div class="members-section">AWAY · 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B7C4E">A<div class="presence-dot away"></div></div>
+            <span class="member-name">Alex</span>
+          </div>
+          <div class="members-section">OFFLINE · 1</div>
+          <div class="member-item">
+            <div class="avatar" style="background:#8B4E6B">J</div>
+            <span class="member-name">Jordan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div id="tab-compare" class="comparison">
+    <h2>Direction Comparison</h2>
+    <table class="comparison-table">
+      <thead>
+        <tr><th>Aspect</th><th>A: Classic Warmth</th><th>B: Airy Modern</th><th>C: Compact Efficient</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Header Style</td>
+          <td class="highlight">Dark teal header</td>
+          <td>White with bold title</td>
+          <td>Minimal, branded text only</td>
+        </tr>
+        <tr>
+          <td>Chat Background</td>
+          <td class="highlight">Textured parchment</td>
+          <td>Light gray (#FAFBFC)</td>
+          <td>Clean white</td>
+        </tr>
+        <tr>
+          <td>Own Message Bubble</td>
+          <td class="highlight">Green tint (#DCF8C6)</td>
+          <td>Primary teal with white text</td>
+          <td>Green tint on white bg</td>
+        </tr>
+        <tr>
+          <td>Other Message Bubble</td>
+          <td>White with shadow</td>
+          <td>White with subtle shadow</td>
+          <td class="highlight">Light gray (#F0F2F5)</td>
+        </tr>
+        <tr>
+          <td>Avatar Shape</td>
+          <td>Circle (48px)</td>
+          <td class="highlight">Rounded square (44px)</td>
+          <td>Circle (36px)</td>
+        </tr>
+        <tr>
+          <td>Bubble Radius</td>
+          <td>8px with tail corner</td>
+          <td class="highlight">16px, large and soft</td>
+          <td>12px, slightly compact</td>
+        </tr>
+        <tr>
+          <td>Active Conversation</td>
+          <td>Gray background</td>
+          <td>Green-tinted background</td>
+          <td class="highlight">Left border accent</td>
+        </tr>
+        <tr>
+          <td>Information Density</td>
+          <td>Standard (WhatsApp-like)</td>
+          <td>Spacious (more breathing room)</td>
+          <td class="highlight">High (more visible at once)</td>
+        </tr>
+        <tr>
+          <td>Send Button</td>
+          <td>Round icon button</td>
+          <td>Rounded-square icon</td>
+          <td class="highlight">Text "Send" button</td>
+        </tr>
+        <tr>
+          <td>Emotional Feel</td>
+          <td class="highlight">Warm, familiar, cozy</td>
+          <td>Clean, contemporary, calm</td>
+          <td>Efficient, professional, fast</td>
+        </tr>
+        <tr>
+          <td>Best For Persona</td>
+          <td class="highlight">Sarah (familiarity)</td>
+          <td>Priya (modern feel)</td>
+          <td>Marcus (efficiency)</td>
+        </tr>
+        <tr>
+          <td>System Messages</td>
+          <td>Yellow-tinted card</td>
+          <td>Gray pill shape</td>
+          <td class="highlight">Inline text, minimal</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.direction, .comparison').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+
+  const target = document.getElementById('tab-' + id);
+  if (target) target.classList.add('active');
+
+  const tabs = document.querySelectorAll('.nav-tab');
+  const tabMap = { a: 0, b: 1, c: 2, compare: 3 };
+  if (tabMap[id] !== undefined) tabs[tabMap[id]].classList.add('active');
+}
+</script>
+
+</body>
+</html>
