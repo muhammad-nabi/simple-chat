@@ -1,6 +1,6 @@
 # Story 1.1: Project Scaffold & Solution Structure
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -38,16 +38,21 @@ so that all subsequent development follows a consistent, proven structure.
 - [ ] Task 1: Scaffold from Jason Taylor Clean Architecture template (AC: #1)
   - [ ] 1.1 Install template: `dotnet new install Clean.Architecture.Solution.Template`
   - [ ] 1.2 Generate solution: `dotnet new ca-sln --client-framework Angular --database sqlserver --output SimpleChat`
-  - [ ] 1.3 Verify all four projects compile: `dotnet build SimpleChat.sln`
+  - [ ] 1.3 Verify .NET 10 TFM in all `.csproj` files (`<TargetFramework>net10.0</TargetFramework>`)
+  - [ ] 1.4 Verify Angular 21 in `src/web/package.json` (`@angular/core` version)
+  - [ ] 1.5 Remove .NET Aspire orchestration projects and references (template includes Aspire by default — must be removed before any builds)
+  - [ ] 1.6 Remove template sample code (WeatherForecast entity, commands, queries, controller, and related registrations)
+  - [ ] 1.7 Create `.editorconfig` at solution root for .NET naming/formatting enforcement
+  - [ ] 1.8 Verify all four projects compile: `dotnet build SimpleChat.sln`
 
 - [ ] Task 2: Backend Domain layer post-scaffold customization (AC: #2)
-  - [ ] 2.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Entities/ and Events/ subfolders
+  - [ ] 2.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Entities/, ValueObjects/, and Events/ subfolders
   - [ ] 2.2 Create Common/BaseEntity.cs with `Id` (long) and `CreatedAt` (DateTime)
   - [ ] 2.3 Create Common/Enums/: ConversationType.cs (Private, Group), UserRole.cs (Admin, Member), PresenceStatus.cs (Online, Away, Offline)
 
 - [ ] Task 3: Backend Application layer post-scaffold customization (AC: #2)
   - [ ] 3.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Commands/, Queries/, EventHandlers/ subfolders
-  - [ ] 3.2 Create Common/Interfaces/ with stub interfaces: IFileStorageService, IMessageSearchService, IAuthenticationProvider, ICacheService
+  - [ ] 3.2 Create Common/Interfaces/ with stub interfaces: IFileStorageService, IMessageSearchService, IAuthenticationProvider, ICacheService, ICurrentUserService
   - [ ] 3.3 Verify Common/Behaviors/ has ValidationBehavior and LoggingBehavior (template may provide these)
   - [ ] 3.4 Create Common/Exceptions/: NotFoundException.cs, ForbiddenAccessException.cs
   - [ ] 3.5 Create Common/Models/PagedResult.cs with Items, HasMore, NextCursor properties
@@ -57,14 +62,16 @@ so that all subsequent development follows a consistent, proven structure.
   - [ ] 4.2 Create empty feature module folders: auth/, chat/, admin/, search/ under features/
   - [ ] 4.3 Create src/app/models/ directory for TypeScript interfaces
   - [ ] 4.4 Switch test runner from Karma to Jest
-  - [ ] 4.5 Create design token file: src/styles/_tokens.scss with all design tokens
-  - [ ] 4.6 Create responsive mixins: src/styles/_mixins.scss
-  - [ ] 4.7 Verify `ng build` completes without errors
+  - [ ] 4.5 Create design token file: src/styles/_tokens.scss with all design tokens (match UX spec exactly)
+  - [ ] 4.6 Create responsive mixins: src/styles/_mixins.scss (includes reduced-motion mixin)
+  - [ ] 4.7 Create src/styles/styles.scss with token import, minimal CSS reset, and skip-to-content link
+  - [ ] 4.8 Verify `ng build` completes without errors
 
 - [ ] Task 5: Verification (AC: #1, #2, #3)
   - [ ] 5.1 Run `dotnet build SimpleChat.sln` — zero errors
-  - [ ] 5.2 Run `ng build` from src/web/ — zero errors
-  - [ ] 5.3 Run Jest default test — passing
+  - [ ] 5.2 Run `dotnet test SimpleChat.sln` — zero failures (template default tests)
+  - [ ] 5.3 Run `ng build` from src/web/ — zero errors
+  - [ ] 5.4 Run Jest default test — passing
 
 ## Dev Notes
 
@@ -78,6 +85,12 @@ dotnet new ca-sln --client-framework Angular --database sqlserver --output Simpl
 ```
 
 This provides: MediatR, FluentValidation, EF Core, OpenAPI + Scalar UI, xUnit test projects, WebApplicationFactory. The template generates the 4-project structure automatically.
+
+**Required runtime:** .NET 10 (LTS) with C# 14, Angular 21 with TypeScript. Verify these versions in `.csproj` and `package.json` after scaffolding.
+
+**Aspire removal:** The template includes .NET Aspire orchestration by default. You MUST remove Aspire projects (`*.AppHost`, `*.ServiceDefaults`) and all Aspire package references from the solution before proceeding. This project uses Docker Compose (Story 1.2), not Aspire.
+
+**Sample code removal:** The template generates a `WeatherForecast` example vertical slice (entity, commands, queries, controller). Remove all of it cleanly — check `Program.cs` for related service registrations.
 
 ### Backend Architecture — Dependency Rule
 
@@ -99,14 +112,20 @@ src/SimpleChat.Domain/
 │       └── PresenceStatus.cs         # Online, Away, Offline
 ├── Identity/
 │   ├── Entities/
+│   ├── ValueObjects/
 │   └── Events/
 ├── Messaging/
 │   ├── Entities/
+│   ├── ValueObjects/
 │   └── Events/
 ├── Presence/
+│   ├── Entities/
+│   ├── ValueObjects/
 │   └── Events/
 └── Files/
-    └── Entities/
+    ├── Entities/
+    ├── ValueObjects/
+    └── Events/
 
 src/SimpleChat.Application/
 ├── DependencyInjection.cs            # MediatR, FluentValidation registration
@@ -115,7 +134,8 @@ src/SimpleChat.Application/
 │   │   ├── IFileStorageService.cs
 │   │   ├── IMessageSearchService.cs
 │   │   ├── IAuthenticationProvider.cs
-│   │   └── ICacheService.cs
+│   │   ├── ICacheService.cs
+│   │   └── ICurrentUserService.cs
 │   ├── Behaviors/
 │   │   ├── ValidationBehavior.cs
 │   │   └── LoggingBehavior.cs
@@ -146,7 +166,7 @@ src/SimpleChat.Application/
 
 ```
 src/web/src/app/
-├── core/                             # Singleton services, imported once in AppModule
+├── core/                             # Singleton services, provided in root
 ├── shared/
 │   └── components/                   # Reusable components across features
 ├── features/
@@ -156,8 +176,8 @@ src/web/src/app/
 │   └── search/                       # Search bar, results
 ├── models/                           # TypeScript interfaces
 ├── app.component.ts
-├── app.routes.ts
-└── app.module.ts
+├── app.config.ts                     # Application configuration (providers)
+└── app.routes.ts                     # Route definitions with lazy loading
 
 src/web/src/styles/
 ├── _tokens.scss                      # All design tokens
@@ -167,8 +187,12 @@ src/web/src/styles/
 
 ### Interface Stubs
 
+All interfaces go in `SimpleChat.Application.Common.Interfaces` namespace.
+
 **IFileStorageService.cs:**
 ```csharp
+namespace SimpleChat.Application.Common.Interfaces;
+
 public interface IFileStorageService
 {
     Task<string> StoreAsync(Stream stream, string fileName, CancellationToken ct = default);
@@ -179,6 +203,8 @@ public interface IFileStorageService
 
 **IMessageSearchService.cs:**
 ```csharp
+namespace SimpleChat.Application.Common.Interfaces;
+
 public interface IMessageSearchService
 {
     Task<PagedResult<MessageSearchResult>> SearchAsync(long userId, string term, long? cursor, int limit, CancellationToken ct = default);
@@ -187,6 +213,8 @@ public interface IMessageSearchService
 
 **IAuthenticationProvider.cs:**
 ```csharp
+namespace SimpleChat.Application.Common.Interfaces;
+
 public interface IAuthenticationProvider
 {
     string HashPassword(string password);
@@ -196,6 +224,8 @@ public interface IAuthenticationProvider
 
 **ICacheService.cs:**
 ```csharp
+namespace SimpleChat.Application.Common.Interfaces;
+
 public interface ICacheService
 {
     Task<T?> GetAsync<T>(string key, CancellationToken ct = default);
@@ -205,19 +235,34 @@ public interface ICacheService
 }
 ```
 
+**ICurrentUserService.cs:**
+```csharp
+namespace SimpleChat.Application.Common.Interfaces;
+
+public interface ICurrentUserService
+{
+    long? UserId { get; }
+    bool IsAuthenticated { get; }
+}
+```
+
 ### BaseEntity.cs
 
 ```csharp
+namespace SimpleChat.Domain.Common;
+
 public abstract class BaseEntity
 {
-    public long Id { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public long Id { get; private set; }
+    public DateTime CreatedAt { get; init; }
 }
 ```
 
 ### PagedResult.cs
 
 ```csharp
+namespace SimpleChat.Application.Common.Models;
+
 public class PagedResult<T>
 {
     public IReadOnlyList<T> Items { get; init; } = Array.Empty<T>();
@@ -228,6 +273,8 @@ public class PagedResult<T>
 
 ### Design Tokens (_tokens.scss)
 
+These must match the UX design specification exactly. This is the single source of truth for all visual decisions — no hardcoded values in component SCSS.
+
 ```scss
 // Colors — warm teal palette
 $color-primary: #128C7E;
@@ -235,21 +282,40 @@ $color-primary-light: #25D366;
 $color-primary-dark: #075E54;
 $color-error: #DC3545;
 $color-warning: #F59E0B;
+$color-success: #25D366;
 
-// Surfaces & text
+// Surfaces
+$color-background: #FFFFFF;
+$color-surface: #F0F2F5;
+$color-surface-hover: #E4E6EB;
+$color-surface-active: #D1D5DB;
+$color-divider: #E5E7EB;
+$color-chat-bg: #FAFBFC;
+
+// Text
 $color-text-primary: #111B21;
 $color-text-secondary: #667781;
-$color-chat-bg: #FAFBFC;
+$color-text-tertiary: #8696A0;
+$color-text-inverse: #FFFFFF;
+
+// Chat bubbles
 $color-bubble-own: #128C7E;
+$color-bubble-own-text: #FFFFFF;
 $color-bubble-other: #FFFFFF;
+$color-bubble-other-text: #111B21;
+$color-bubble-system: #F0F2F5;
+$color-unread: #128C7E;
 
 // Typography — system font stack, no web fonts
-$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 $font-size-caption: 12px;
 $font-size-body-sm: 13px;
 $font-size-body: 14px;
 $font-size-body-lg: 15px;
 $font-size-heading: 18px;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
 
 // Spacing — 4px base unit
 $space-xs: 4px;
@@ -268,15 +334,15 @@ $avatar-radius: 14px;
 $bubble-radius: 16px;
 $input-radius: 16px;
 
-// Shadows
-$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+// Shadows (values from UX spec)
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
 $shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
 
-// Transitions
-$transition-fast: 150ms;
-$transition-normal: 250ms;
-$transition-slow: 400ms;
+// Transitions (with easing)
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$transition-slow: 400ms ease;
 
 // Breakpoints
 $breakpoint-mobile: 768px;
@@ -306,17 +372,96 @@ $z-connection-status: 500;
 @mixin desktop {
   @media (min-width: #{t.$breakpoint-tablet}) { @content; }
 }
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) { @content; }
+}
 ```
+
+### Global Styles (styles.scss)
+
+```scss
+@use 'tokens' as t;
+
+// Minimal CSS reset
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: t.$font-family;
+  font-size: t.$font-size-body;
+  color: t.$color-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: t.$color-background;
+  min-height: 100vh;
+}
+
+// Skip-to-content link (accessibility baseline)
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: t.$space-sm t.$space-lg;
+  background: t.$color-primary;
+  color: t.$color-text-inverse;
+  font-weight: t.$font-weight-medium;
+  text-decoration: none;
+
+  &:focus {
+    left: 0;
+  }
+}
+
+// Focus indicator (global baseline)
+:focus-visible {
+  outline: 2px solid t.$color-primary;
+  outline-offset: 2px;
+}
+```
+
+The root `AppComponent` template must include: `<a class="skip-to-content" href="#main-content">Skip to content</a>` as the first element.
 
 ### Switching Karma to Jest
 
-1. Remove Karma packages: `karma`, `karma-chrome-launcher`, `karma-coverage`, `karma-jasmine`, `karma-jasmine-html-reporter`
-2. Remove `karma.conf.js`
-3. Install Jest: `npm install --save-dev jest @types/jest jest-preset-angular`
-4. Create `jest.config.ts` at `src/web/jest.config.ts`
-5. Update `angular.json` to use `@angular-builders/jest:run` for the test architect
-6. Update `tsconfig.spec.json` to use Jest types instead of Jasmine
-7. Verify a default test passes
+1. Remove Karma packages: `npm uninstall karma karma-chrome-launcher karma-coverage karma-jasmine karma-jasmine-html-reporter`
+2. Remove `karma.conf.js` and any `test.ts` karma bootstrap file
+3. Install Jest: `npm install --save-dev jest @types/jest jest-preset-angular @angular-builders/jest`
+4. Create `jest.config.ts` at `src/web/jest.config.ts` (see content below)
+5. Update `angular.json`: replace the `test` architect builder with `@angular-builders/jest:run`
+6. Update `tsconfig.spec.json`: replace `"jasmine"` with `"jest"` in `compilerOptions.types`
+7. Verify a default test passes with `ng test`
+
+**jest.config.ts:**
+```typescript
+import type { Config } from 'jest';
+
+const config: Config = {
+  preset: 'jest-preset-angular',
+  setupFilesAfterSetup: ['<rootDir>/setup-jest.ts'],
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
+  moduleNameMapper: {
+    '^@app/(.*)$': '<rootDir>/src/app/$1',
+    '^@environments/(.*)$': '<rootDir>/src/environments/$1',
+  },
+};
+
+export default config;
+```
+
+**setup-jest.ts** (create at `src/web/setup-jest.ts`):
+```typescript
+import 'jest-preset-angular/setup-jest';
+```
 
 ### Naming Conventions
 
@@ -334,9 +479,11 @@ $z-connection-status: 500;
 
 - **No UI framework** — no Angular Material, PrimeNG, or utility CSS. Custom components only. This is a load-bearing decision tied to <500KB gzipped bundle target (NFR5).
 - **@angular/cdk** is the only external Angular UI dependency (needed for BreakpointObserver in ChatLayout).
+- **Standalone components** — Angular 21 defaults to standalone components. Use `app.config.ts` with `provideRouter()` and `provideHttpClient()`, not NgModules. Feature modules use lazy-loaded routes, not `NgModule` declarations.
 - **No repository pattern** — EF Core `AppDbContext` is injected directly into command/query handlers.
 - **ViewEncapsulation.Emulated** (Angular default) for all components.
 - Tokens imported in each component SCSS: `@use '../../../styles/tokens' as t;`
+- **No hardcoded values** in component SCSS — every color, spacing, radius, shadow, and transition must reference a token.
 
 ### What NOT to Do
 
@@ -347,14 +494,20 @@ $z-connection-status: 500;
 - Do NOT add Serilog or health checks — that's Story 1.4
 - Do NOT create CI pipeline — that's Story 1.5
 - Do NOT install @angular/pwa yet — that's Epic 9
-- Do NOT create actual Angular components — only the folder structure and module shells
+- Do NOT create actual Angular components — only the folder structure
+- Do NOT modify `Program.cs` beyond what the template provides (startup changes belong to Stories 1.3 and 1.4)
+- Do NOT add service registrations in `DependencyInjection.cs` for infrastructure services (file storage, cache, etc.) — those belong to later stories when implementations exist
+- Do NOT install Angular Material, PrimeNG, or any UI component library
 
 ### Project Structure Notes
 
 - The Jason Taylor template provides the base 4-project solution structure. Post-scaffold work is adding module organization within that structure.
+- The template includes .NET Aspire by default — this MUST be removed (we use Docker Compose instead).
+- The template includes a WeatherForecast sample vertical slice — remove all sample code cleanly.
 - The template includes MediatR and FluentValidation registration in `DependencyInjection.cs` — verify and preserve this.
 - The template may include some Common/ infrastructure — inspect and extend rather than replace.
 - Tests directory comes from the template with xUnit — keep the structure.
+- Create `.editorconfig` at the solution root for .NET code style enforcement (PascalCase public members, _camelCase private fields). The CI pipeline (Story 1.5) will depend on this for lint enforcement.
 
 ### References
 
