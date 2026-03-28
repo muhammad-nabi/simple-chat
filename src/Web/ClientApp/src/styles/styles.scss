@@ -1,0 +1,46 @@
+@use 'tokens' as t;
+
+// Minimal CSS reset
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: t.$font-family;
+  font-size: t.$font-size-body;
+  color: t.$color-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: t.$color-background;
+  min-height: 100vh;
+}
+
+// Skip-to-content link (accessibility baseline)
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: t.$space-sm t.$space-lg;
+  background: t.$color-primary;
+  color: t.$color-text-inverse;
+  font-weight: t.$font-weight-medium;
+  text-decoration: none;
+
+  &:focus {
+    left: 0;
+  }
+}
+
+// Focus indicator (global baseline)
+:focus-visible {
+  outline: 2px solid t.$color-primary;
+  outline-offset: 2px;
+}

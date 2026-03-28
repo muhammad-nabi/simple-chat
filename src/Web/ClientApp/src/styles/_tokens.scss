@@ -1,0 +1,78 @@
+// Colors — warm teal palette
+$color-primary: #128C7E;
+$color-primary-light: #25D366;
+$color-primary-dark: #075E54;
+$color-error: #DC3545;
+$color-warning: #F59E0B;
+$color-success: #25D366;
+
+// Surfaces
+$color-background: #FFFFFF;
+$color-surface: #F0F2F5;
+$color-surface-hover: #E4E6EB;
+$color-surface-active: #D1D5DB;
+$color-divider: #E5E7EB;
+$color-chat-bg: #FAFBFC;
+
+// Text
+$color-text-primary: #111B21;
+$color-text-secondary: #667781;
+$color-text-tertiary: #8696A0;
+$color-text-inverse: #FFFFFF;
+
+// Chat bubbles
+$color-bubble-own: #128C7E;
+$color-bubble-own-text: #FFFFFF;
+$color-bubble-other: #FFFFFF;
+$color-bubble-other-text: #111B21;
+$color-bubble-system: #F0F2F5;
+$color-unread: #128C7E;
+
+// Typography — system font stack, no web fonts
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+$font-size-caption: 12px;
+$font-size-body-sm: 13px;
+$font-size-body: 14px;
+$font-size-body-lg: 15px;
+$font-size-heading: 18px;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+
+// Spacing — 4px base unit
+$space-xs: 4px;
+$space-sm: 8px;
+$space-md: 12px;
+$space-lg: 16px;
+$space-xl: 24px;
+$space-2xl: 32px;
+
+// Border radius
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 16px;
+$radius-full: 9999px;
+$avatar-radius: 14px;
+$bubble-radius: 16px;
+$input-radius: 16px;
+
+// Shadows (values from UX spec)
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+// Transitions (with easing)
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$transition-slow: 400ms ease;
+
+// Breakpoints
+$breakpoint-mobile: 768px;
+$breakpoint-tablet: 1024px;
+
+// Z-index layers
+$z-dropdown: 100;
+$z-modal-backdrop: 200;
+$z-modal: 300;
+$z-toast: 400;
+$z-connection-status: 500;

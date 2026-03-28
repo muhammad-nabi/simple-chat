@@ -1,0 +1,17 @@
+@use 'tokens' as t;
+
+@mixin mobile {
+  @media (max-width: #{t.$breakpoint-mobile - 1px}) { @content; }
+}
+
+@mixin tablet {
+  @media (min-width: #{t.$breakpoint-mobile}) and (max-width: #{t.$breakpoint-tablet - 1px}) { @content; }
+}
+
+@mixin desktop {
+  @media (min-width: #{t.$breakpoint-tablet}) { @content; }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) { @content; }
+}

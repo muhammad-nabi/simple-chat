@@ -1,0 +1,36 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@Web_HostAddress = https://localhost:7089
+
+# Register a new user
+POST {{Web_HostAddress}}/api/Users/register
+Content-Type: application/json
+
+{
+  "email": "user@localhost",
+  "password": "User1234!"
+}
+
+###
+
+# Log in
+POST {{Web_HostAddress}}/api/Users/login?useCookies=true
+Content-Type: application/json
+
+{
+  "email": "administrator@localhost",
+  "password": "Administrator1!"
+}
+
+###
+
+# Log out (requires authentication)
+@AuthCookieName = .AspNetCore.Identity.Application
+@AuthCookieValue = <AuthCookieValue>
+
+POST {{Web_HostAddress}}/api/Users/logout
+Cookie: {{AuthCookieName}}={{AuthCookieValue}}
+Content-Type: application/json
+
+{}
+
+###

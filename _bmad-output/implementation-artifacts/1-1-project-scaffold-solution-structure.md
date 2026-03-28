@@ -1,6 +1,6 @@
 # Story 1.1: Project Scaffold & Solution Structure
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -35,43 +35,43 @@ so that all subsequent development follows a consistent, proven structure.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Scaffold from Jason Taylor Clean Architecture template (AC: #1)
-  - [ ] 1.1 Install template: `dotnet new install Clean.Architecture.Solution.Template`
-  - [ ] 1.2 Generate solution: `dotnet new ca-sln --client-framework Angular --database sqlserver --output SimpleChat`
-  - [ ] 1.3 Verify .NET 10 TFM in all `.csproj` files (`<TargetFramework>net10.0</TargetFramework>`)
-  - [ ] 1.4 Verify Angular 21 in `src/web/package.json` (`@angular/core` version)
-  - [ ] 1.5 Remove .NET Aspire orchestration projects and references (template includes Aspire by default — must be removed before any builds)
-  - [ ] 1.6 Remove template sample code (WeatherForecast entity, commands, queries, controller, and related registrations)
-  - [ ] 1.7 Create `.editorconfig` at solution root for .NET naming/formatting enforcement
-  - [ ] 1.8 Verify all four projects compile: `dotnet build SimpleChat.sln`
+- [x] Task 1: Scaffold from Jason Taylor Clean Architecture template (AC: #1)
+  - [x] 1.1 Install template: `dotnet new install Clean.Architecture.Solution.Template`
+  - [x] 1.2 Generate solution: `dotnet new ca-sln --client-framework Angular --database sqlserver --output SimpleChat`
+  - [x] 1.3 Verify .NET 10 TFM in all `.csproj` files (`<TargetFramework>net10.0</TargetFramework>`)
+  - [x] 1.4 Verify Angular 21 in `src/web/package.json` (`@angular/core` version)
+  - [x] 1.5 Remove .NET Aspire orchestration projects and references (template includes Aspire by default — must be removed before any builds)
+  - [x] 1.6 Remove template sample code (WeatherForecast entity, commands, queries, controller, and related registrations)
+  - [x] 1.7 Create `.editorconfig` at solution root for .NET naming/formatting enforcement
+  - [x] 1.8 Verify all four projects compile: `dotnet build SimpleChat.sln`
 
-- [ ] Task 2: Backend Domain layer post-scaffold customization (AC: #2)
-  - [ ] 2.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Entities/, ValueObjects/, and Events/ subfolders
-  - [ ] 2.2 Create Common/BaseEntity.cs with `Id` (long) and `CreatedAt` (DateTime)
-  - [ ] 2.3 Create Common/Enums/: ConversationType.cs (Private, Group), UserRole.cs (Admin, Member), PresenceStatus.cs (Online, Away, Offline)
+- [x] Task 2: Backend Domain layer post-scaffold customization (AC: #2)
+  - [x] 2.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Entities/, ValueObjects/, and Events/ subfolders
+  - [x] 2.2 Create Common/BaseEntity.cs with `Id` (long) and `CreatedAt` (DateTime)
+  - [x] 2.3 Create Common/Enums/: ConversationType.cs (Private, Group), UserRole.cs (Admin, Member), PresenceStatus.cs (Online, Away, Offline)
 
-- [ ] Task 3: Backend Application layer post-scaffold customization (AC: #2)
-  - [ ] 3.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Commands/, Queries/, EventHandlers/ subfolders
-  - [ ] 3.2 Create Common/Interfaces/ with stub interfaces: IFileStorageService, IMessageSearchService, IAuthenticationProvider, ICacheService, ICurrentUserService
-  - [ ] 3.3 Verify Common/Behaviors/ has ValidationBehavior and LoggingBehavior (template may provide these)
-  - [ ] 3.4 Create Common/Exceptions/: NotFoundException.cs, ForbiddenAccessException.cs
-  - [ ] 3.5 Create Common/Models/PagedResult.cs with Items, HasMore, NextCursor properties
+- [x] Task 3: Backend Application layer post-scaffold customization (AC: #2)
+  - [x] 3.1 Create module folders: Identity/, Messaging/, Presence/, Files/ each with Commands/, Queries/, EventHandlers/ subfolders
+  - [x] 3.2 Create Common/Interfaces/ with stub interfaces: IFileStorageService, IMessageSearchService, IAuthenticationProvider, ICacheService, ICurrentUserService
+  - [x] 3.3 Verify Common/Behaviors/ has ValidationBehavior and LoggingBehavior (template may provide these)
+  - [x] 3.4 Create Common/Exceptions/: NotFoundException.cs, ForbiddenAccessException.cs
+  - [x] 3.5 Create Common/Models/PagedResult.cs with Items, HasMore, NextCursor properties
 
-- [ ] Task 4: Angular frontend post-scaffold customization (AC: #3)
-  - [ ] 4.1 Create directory structure: src/app/core/, src/app/shared/components/, src/app/features/
-  - [ ] 4.2 Create empty feature module folders: auth/, chat/, admin/, search/ under features/
-  - [ ] 4.3 Create src/app/models/ directory for TypeScript interfaces
-  - [ ] 4.4 Switch test runner from Karma to Jest
-  - [ ] 4.5 Create design token file: src/styles/_tokens.scss with all design tokens (match UX spec exactly)
-  - [ ] 4.6 Create responsive mixins: src/styles/_mixins.scss (includes reduced-motion mixin)
-  - [ ] 4.7 Create src/styles/styles.scss with token import, minimal CSS reset, and skip-to-content link
-  - [ ] 4.8 Verify `ng build` completes without errors
+- [x] Task 4: Angular frontend post-scaffold customization (AC: #3)
+  - [x] 4.1 Create directory structure: src/app/core/, src/app/shared/components/, src/app/features/
+  - [x] 4.2 Create empty feature module folders: auth/, chat/, admin/, search/ under features/
+  - [x] 4.3 Create src/app/models/ directory for TypeScript interfaces
+  - [x] 4.4 Switch test runner from Karma to Jest
+  - [x] 4.5 Create design token file: src/styles/_tokens.scss with all design tokens (match UX spec exactly)
+  - [x] 4.6 Create responsive mixins: src/styles/_mixins.scss (includes reduced-motion mixin)
+  - [x] 4.7 Create src/styles/styles.scss with token import, minimal CSS reset, and skip-to-content link
+  - [x] 4.8 Verify `ng build` completes without errors
 
-- [ ] Task 5: Verification (AC: #1, #2, #3)
-  - [ ] 5.1 Run `dotnet build SimpleChat.sln` — zero errors
-  - [ ] 5.2 Run `dotnet test SimpleChat.sln` — zero failures (template default tests)
-  - [ ] 5.3 Run `ng build` from src/web/ — zero errors
-  - [ ] 5.4 Run Jest default test — passing
+- [x] Task 5: Verification (AC: #1, #2, #3)
+  - [x] 5.1 Run `dotnet build SimpleChat.sln` — zero errors
+  - [x] 5.2 Run `dotnet test SimpleChat.sln` — zero failures (template default tests)
+  - [x] 5.3 Run `ng build` from src/web/ — zero errors
+  - [x] 5.4 Run Jest default test — passing
 
 ## Dev Notes
 
@@ -520,9 +520,190 @@ import 'jest-preset-angular/setup-jest';
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (1M context)
 
 ### Debug Log References
+- Template v10.8.0 generated .slnx format (not .sln) — adapted all references
+- Template used TodoList/TodoItem as primary sample (not WeatherForecast as story mentioned) — removed all sample code
+- global.json specified SDK 10.0.201 but 10.0.102 installed — updated to match
+- Central package management required nuget.config to clear global sources (Hangfire, Telerik)
+- Aspire.Microsoft.EntityFrameworkCore.SqlServer replaced with Microsoft.EntityFrameworkCore.SqlServer
+- jest-preset-angular v16 moved setup file from `setup-jest` to `setup-env/zone` — adapted import
+- jest.config.ts not recognized by @angular-builders/jest — switched to jest.config.js
+- tsconfig.spec.json needed `isolatedModules: true` to work with `bundler` moduleResolution for Angular v21 package exports
+- `NotFoundException` conflict between custom and Ardalis.GuardClauses — resolved with explicit using alias
+- `setupFilesAfterSetup` typo in story spec — corrected to `setupFilesAfterEnv`
 
 ### Completion Notes List
+- Scaffolded from Jason Taylor Clean Architecture Solution Template v10.8.0
+- .NET 10 (TFM net10.0), Angular 21.1.5, TypeScript 5.9.3
+- Removed .NET Aspire orchestration (AppHost, ServiceDefaults, Shared, TestAppHost, .aspire)
+- Removed all template sample code (TodoList, TodoItem, WeatherForecast, Colour, Counter, etc.)
+- Created Domain module structure: Identity, Messaging, Presence, Files with Entities/ValueObjects/Events subfolders
+- Updated BaseEntity: Id (long, private set), CreatedAt (DateTime, init)
+- Created enums: ConversationType, UserRole, PresenceStatus
+- Created Application module structure: Identity, Messaging, Presence, Files with Commands/Queries/EventHandlers subfolders
+- Created stub interfaces: IFileStorageService, IMessageSearchService, IAuthenticationProvider, ICacheService, ICurrentUserService
+- Created NotFoundException, verified ForbiddenAccessException exists, verified ValidationBehaviour and LoggingBehaviour exist
+- Created PagedResult<T> model with Items, HasMore, NextCursor
+- Converted Angular app from NgModules to standalone components (app.config.ts, app.routes.ts)
+- Created Angular directory structure: core/, shared/components/, features/{auth,chat,admin,search}/, models/
+- Switched from Karma/Jasmine to Jest with jest-preset-angular
+- Created design tokens (_tokens.scss), responsive mixins (_mixins.scss), and global styles (styles.scss)
+- AppComponent includes skip-to-content accessibility link
+- All .NET projects compile: 0 errors, 0 warnings
+- dotnet test: 5 passed (RequestLogger + ValidationException tests)
+- ng build: successful (240.83 KB initial bundle)
+
+### Review Findings
+
+#### Chunk 1: Backend
+
+- [x] [Review][Defer] #1 CORS AllowAny* not environment-gated [src/Web/Program.cs] — deferred, production CORS belongs to Story 1.2/security hardening
+- [x] [Review][Defer] #2 Duplicate creation timestamps: BaseEntity.CreatedAt vs BaseAuditableEntity.Created — deferred, reconcile when entities created in Stories 2.x/3.x
+- [x] [Review][Defer] #3 DB initializer calls EnsureDeletedAsync [src/Infrastructure/Data/ApplicationDbContextInitialiser.cs] — deferred, Story 1.3 covers DB initialization
+- [x] [Review][Patch] #4 README still references Aspire and TodoList sample code [README.md] — fixed
+- [x] [Review][Patch] #5 Web.http contains only sample API requests [src/Web/Web.http] — fixed
+- [x] [Review][Patch] #6 proxy.conf.js contains /weatherforecast entries [src/Web/ClientApp/proxy.conf.js] — fixed
+- [x] [Review][Patch] #7 IEndpointGroup.cs XML comment references TodoLists [src/Web/Infrastructure/IEndpointGroup.cs:8] — fixed
+- [x] [Review][Patch] #8 Application.csproj includes bogus MSBuild packages [src/Application/Application.csproj] — fixed
+- [x] [Review][Defer] #9 Hardcoded admin password "Administrator1!" in seeder [src/Infrastructure/Data/ApplicationDbContextInitialiser.cs] — deferred, template default
+- [x] [Review][Defer] #10 .GetAwaiter().GetResult() in DispatchDomainEventsInterceptor sync path [src/Infrastructure/Data/Interceptors/DispatchDomainEventsInterceptor.cs] — deferred, template code
+- [x] [Review][Defer] #11 Domain events dispatched before SaveChanges commits [src/Infrastructure/Data/Interceptors/DispatchDomainEventsInterceptor.cs] — deferred, template pattern
+- [x] [Review][Defer] #12 Domain event handler exception leaves events partially cleared [src/Infrastructure/Data/Interceptors/DispatchDomainEventsInterceptor.cs] — deferred, template code
+- [x] [Review][Defer] #13 Role authorization doesn't trim whitespace in comma-separated roles [src/Application/Common/Behaviours/AuthorizationBehaviour.cs] — deferred, template code
+- [x] [Review][Defer] #14 Seed user creation result not checked [src/Infrastructure/Data/ApplicationDbContextInitialiser.cs] — deferred, template code
+- [x] [Review][Defer] #15 Logout endpoint body check logic inverted [src/Web/Endpoints/Users.cs] — deferred, template code
+- [x] [Review][Defer] #16 PerformanceBehaviour Stopwatch not reset between calls [src/Application/Common/Behaviours/PerformanceBehaviour.cs] — deferred, template code
+- [x] [Review][Defer] #17 Auditable entity interceptor writes null UserId for system operations [src/Infrastructure/Data/Interceptors/AuditableEntityInterceptor.cs] — deferred, template code
+- [x] [Review][Defer] #18 Logging behaviour logs entire request object (PII risk) [src/Application/Common/Behaviours/LoggingBehaviour.cs] — deferred, template code
+- [x] [Review][Defer] #19 ExceptionHandler middleware registered after static files middleware [src/Web/Program.cs] — deferred, template code
+
+#### Chunk 2: Frontend
+
+- [x] [Review][Patch] #20 Google Fonts CDN links in index.html violate "no web fonts" constraint [src/Web/ClientApp/src/index.html] — fixed
+- [x] [Review][Patch] #21 Title "Clean Architecture" — stale template title [src/Web/ClientApp/src/index.html] — fixed
+- [x] [Review][Patch] #22 PicoCSS picoColorScheme script remnant in index.html [src/Web/ClientApp/src/index.html] — fixed
+- [x] [Review][Patch] #23 ClientApp README still references Karma [src/Web/ClientApp/README.md] — fixed
+- [x] [Review][Patch] #24 Proxy target undefined when Aspire env vars missing — added localhost fallback [src/Web/ClientApp/proxy.conf.js] — fixed
+- [x] [Review][Patch] #25 Favicon MIME type mismatch: .png declared as image/svg+xml [src/Web/ClientApp/src/index.html] — fixed
+- [x] [Review][Patch] #26 strict: false in tsconfig.json — changed to true [src/Web/ClientApp/tsconfig.json] — fixed
+- [x] [Review][Defer] #27 provideHttpClient() missing XSRF/fetch options — deferred, address in Story 2.2 (auth)
+- [x] [Review][Defer] #28 Production bundle budget thresholds too permissive (1MB/5MB) — deferred, pre-existing template
+- [x] [Review][Defer] #29 No dark-mode token set — deferred, not in scope for Story 1.1
+- Jest: 2 tests passed (AppComponent creation + skip-to-content link)
+
+### Change Log
+- 2026-03-28: Story 1.1 implementation complete — project scaffolded, Aspire removed, sample code removed, domain/application layers customized, Angular frontend restructured with standalone components and Jest
 
 ### File List
+- SimpleChat.slnx (modified — removed Aspire projects)
+- Directory.Build.props (from template, net10.0 TFM)
+- Directory.Packages.props (modified — removed Aspire packages, added EF Core SqlServer)
+- global.json (modified — SDK version 10.0.102)
+- nuget.config (new — single source nuget.org)
+- .editorconfig (from template)
+- .gitignore (from template)
+- src/Domain/Domain.csproj
+- src/Domain/GlobalUsings.cs (modified)
+- src/Domain/Common/BaseEntity.cs (modified — Id long, CreatedAt DateTime)
+- src/Domain/Common/BaseAuditableEntity.cs (from template)
+- src/Domain/Common/BaseEvent.cs (from template)
+- src/Domain/Common/ValueObject.cs (from template)
+- src/Domain/Common/Enums/ConversationType.cs (new)
+- src/Domain/Common/Enums/UserRole.cs (new)
+- src/Domain/Common/Enums/PresenceStatus.cs (new)
+- src/Domain/Identity/Entities/.gitkeep (new)
+- src/Domain/Identity/ValueObjects/.gitkeep (new)
+- src/Domain/Identity/Events/.gitkeep (new)
+- src/Domain/Messaging/Entities/.gitkeep (new)
+- src/Domain/Messaging/ValueObjects/.gitkeep (new)
+- src/Domain/Messaging/Events/.gitkeep (new)
+- src/Domain/Presence/Entities/.gitkeep (new)
+- src/Domain/Presence/ValueObjects/.gitkeep (new)
+- src/Domain/Presence/Events/.gitkeep (new)
+- src/Domain/Files/Entities/.gitkeep (new)
+- src/Domain/Files/ValueObjects/.gitkeep (new)
+- src/Domain/Files/Events/.gitkeep (new)
+- src/Application/Application.csproj
+- src/Application/GlobalUsings.cs (from template)
+- src/Application/DependencyInjection.cs (from template)
+- src/Application/Common/Interfaces/IApplicationDbContext.cs (modified — removed Todo DbSets)
+- src/Application/Common/Interfaces/IIdentityService.cs (from template)
+- src/Application/Common/Interfaces/IUser.cs (from template)
+- src/Application/Common/Interfaces/IFileStorageService.cs (new)
+- src/Application/Common/Interfaces/IMessageSearchService.cs (new)
+- src/Application/Common/Interfaces/IAuthenticationProvider.cs (new)
+- src/Application/Common/Interfaces/ICacheService.cs (new)
+- src/Application/Common/Interfaces/ICurrentUserService.cs (new)
+- src/Application/Common/Behaviours/ValidationBehaviour.cs (from template)
+- src/Application/Common/Behaviours/LoggingBehaviour.cs (from template)
+- src/Application/Common/Behaviours/AuthorizationBehaviour.cs (from template)
+- src/Application/Common/Behaviours/PerformanceBehaviour.cs (from template)
+- src/Application/Common/Behaviours/UnhandledExceptionBehaviour.cs (from template)
+- src/Application/Common/Exceptions/ForbiddenAccessException.cs (from template)
+- src/Application/Common/Exceptions/ValidationException.cs (from template)
+- src/Application/Common/Exceptions/NotFoundException.cs (new)
+- src/Application/Common/Models/Result.cs (from template)
+- src/Application/Common/Models/PagedResult.cs (new)
+- src/Application/Common/Models/MessageSearchResult.cs (new)
+- src/Application/Common/Security/AuthorizeAttribute.cs (from template)
+- src/Application/Identity/Commands/.gitkeep (new)
+- src/Application/Identity/Queries/.gitkeep (new)
+- src/Application/Identity/EventHandlers/.gitkeep (new)
+- src/Application/Messaging/Commands/.gitkeep (new)
+- src/Application/Messaging/Queries/.gitkeep (new)
+- src/Application/Messaging/EventHandlers/.gitkeep (new)
+- src/Application/Presence/Commands/.gitkeep (new)
+- src/Application/Presence/Queries/.gitkeep (new)
+- src/Application/Presence/EventHandlers/.gitkeep (new)
+- src/Application/Files/Commands/.gitkeep (new)
+- src/Application/Files/Queries/.gitkeep (new)
+- src/Application/Files/EventHandlers/.gitkeep (new)
+- src/Infrastructure/Infrastructure.csproj (modified — removed Aspire, added EF Core SqlServer)
+- src/Infrastructure/GlobalUsings.cs (modified — removed Shared reference)
+- src/Infrastructure/DependencyInjection.cs (modified — removed Aspire, fixed connection string)
+- src/Infrastructure/Data/ApplicationDbContext.cs (modified — removed Todo DbSets)
+- src/Infrastructure/Data/ApplicationDbContextInitialiser.cs (modified — removed sample seed data)
+- src/Infrastructure/Data/Interceptors/AuditableEntityInterceptor.cs (from template)
+- src/Infrastructure/Data/Interceptors/DispatchDomainEventsInterceptor.cs (from template)
+- src/Infrastructure/Identity/ApplicationUser.cs (from template)
+- src/Infrastructure/Identity/IdentityService.cs (from template)
+- src/Infrastructure/Identity/IdentityResultExtensions.cs (from template)
+- src/Web/Web.csproj (modified — removed ServiceDefaults reference)
+- src/Web/Program.cs (modified — removed Aspire calls)
+- src/Web/DependencyInjection.cs (from template)
+- src/Web/appsettings.json (from template)
+- src/Web/Services/CurrentUser.cs (from template)
+- src/Web/Endpoints/Users.cs (from template)
+- src/Web/Infrastructure/IEndpointGroup.cs (from template)
+- src/Web/Infrastructure/EndpointRouteBuilderExtensions.cs (from template)
+- src/Web/Infrastructure/WebApplicationExtensions.cs (from template)
+- src/Web/Infrastructure/MethodInfoExtensions.cs (from template)
+- src/Web/Infrastructure/ProblemDetailsExceptionHandler.cs (modified — added NotFoundException alias)
+- src/Web/Infrastructure/ApiExceptionOperationTransformer.cs (from template)
+- src/Web/Infrastructure/IdentityApiOperationTransformer.cs (from template)
+- src/Web/ClientApp/package.json (modified — removed sample deps, switched to Jest)
+- src/Web/ClientApp/angular.json (modified — Jest builder, updated styles path)
+- src/Web/ClientApp/tsconfig.spec.json (modified — Jest types, isolatedModules)
+- src/Web/ClientApp/jest.config.js (new)
+- src/Web/ClientApp/setup-jest.ts (new)
+- src/Web/ClientApp/src/main.ts (modified — standalone bootstrap)
+- src/Web/ClientApp/src/app/app.component.ts (modified — standalone with skip-to-content)
+- src/Web/ClientApp/src/app/app.component.spec.ts (new — Jest test)
+- src/Web/ClientApp/src/app/app.config.ts (new)
+- src/Web/ClientApp/src/app/app.routes.ts (new)
+- src/Web/ClientApp/src/app/core/.gitkeep (new)
+- src/Web/ClientApp/src/app/shared/components/.gitkeep (new)
+- src/Web/ClientApp/src/app/features/auth/.gitkeep (new)
+- src/Web/ClientApp/src/app/features/chat/.gitkeep (new)
+- src/Web/ClientApp/src/app/features/admin/.gitkeep (new)
+- src/Web/ClientApp/src/app/features/search/.gitkeep (new)
+- src/Web/ClientApp/src/app/models/.gitkeep (new)
+- src/Web/ClientApp/src/styles/_tokens.scss (new)
+- src/Web/ClientApp/src/styles/_mixins.scss (new)
+- src/Web/ClientApp/src/styles/styles.scss (new)
+- tests/Application.UnitTests/Common/Behaviours/RequestLoggerTests.cs (modified — removed sample dependency)
+- tests/Application.UnitTests/Common/Exceptions/ValidationExceptionTests.cs (from template)
+- tests/Domain.UnitTests/Domain.UnitTests.csproj (from template)
+- tests/Infrastructure.IntegrationTests/Infrastructure.IntegrationTests.csproj (from template)
