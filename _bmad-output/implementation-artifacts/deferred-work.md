@@ -27,3 +27,7 @@
 - Redis has no authentication (requirepass not set) — any container on the network can read/write; add auth before production
 - JWT default secret is a committed known value in docker-compose.yml — enforce secret validation when JWT auth is implemented (Story 2.2)
 - AC5 upgrade path requires `image:` tag for registry pull — add when CI/CD pipeline pushes to a container registry (Story 1.5)
+
+## Deferred from: code review of story-1-3 (2026-03-29)
+
+- Seed data hardcoded password "Administrator1!" now runs in all environments (not just Development) — externalization deferred to Story 2.x per spec

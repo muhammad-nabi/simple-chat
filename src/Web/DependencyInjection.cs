@@ -1,6 +1,7 @@
 using Azure.Identity;
 using SimpleChat.Application.Common.Interfaces;
 using SimpleChat.Infrastructure.Data;
+using SimpleChat.Web.HealthChecks;
 using SimpleChat.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,6 +32,11 @@ public static class DependencyInjection
         });
 
         builder.Services.AddCors();
+
+        // Health checks — singleton first so MarkReady() and health check use the same instance
+        builder.Services.AddSingleton<StartupHealthCheck>();
+        builder.Services.AddHealthChecks()
+            .AddCheck<StartupHealthCheck>("startup", tags: new[] { "startup" });
     }
 
     public static void AddKeyVaultIfConfigured(this IHostApplicationBuilder builder)

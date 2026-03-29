@@ -40,7 +40,8 @@ COPY --from=frontend /app/dist/browser/ /app/publish/wwwroot/
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create uploads directory
+# Install curl for Docker healthcheck and create uploads directory
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/uploads
 
 COPY --from=publish /app/publish .

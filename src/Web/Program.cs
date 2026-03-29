@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using SimpleChat.Infrastructure.Data;
+using SimpleChat.Web.HealthChecks;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,19 +13,31 @@ builder.AddWebServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Database initialization — runs migrations in all environments for zero-ops upgrades (FR41, FR42)
+try
 {
     await app.InitialiseDatabaseAsync();
+    app.Services.GetRequiredService<StartupHealthCheck>().MarkReady();
 }
-else
+catch (Exception ex)
 {
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.Logger.LogError(ex, "Database initialization failed. The application will start but /health/startup will report unhealthy.");
+}
+
+// Health check endpoint — mapped early so it responds even during app errors
+app.MapHealthChecks("/health/startup", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("startup")
+});
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseCors(static builder => 
+app.UseCors(static builder =>
     builder.AllowAnyMethod()
         .AllowAnyHeader()
         .AllowAnyOrigin());

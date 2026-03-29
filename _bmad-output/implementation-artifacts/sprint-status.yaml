@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-project-scaffold-solution-structure: done
   1-2-docker-compose-container-configuration: done
-  1-3-database-initialization-auto-migration: ready-for-dev
+  1-3-database-initialization-auto-migration: done
   1-4-structured-logging-health-endpoints: backlog
   1-5-ci-pipeline-configuration: backlog
   epic-1-retrospective: optional

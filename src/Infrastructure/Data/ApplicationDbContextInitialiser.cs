@@ -1,6 +1,7 @@
 using SimpleChat.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -38,12 +39,13 @@ public class ApplicationDbContextInitialiser
     {
         try
         {
-            await _context.Database.EnsureDeletedAsync();
-            await _context.Database.EnsureCreatedAsync();
+            _logger.LogInformation("Applying database migrations...");
+            await _context.Database.MigrateAsync();
+            _logger.LogInformation("Database migrations applied successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initialising the database.");
+            _logger.LogError(ex, "An error occurred while migrating the database.");
             throw;
         }
     }
@@ -68,7 +70,13 @@ public class ApplicationDbContextInitialiser
 
         if (_roleManager.Roles.All(r => r.Name != administratorRole.Name))
         {
-            await _roleManager.CreateAsync(administratorRole);
+            var roleResult = await _roleManager.CreateAsync(administratorRole);
+            if (!roleResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to create seed role 'Administrator': {Errors}",
+                    string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                return;
+            }
         }
 
         // Default users
@@ -76,10 +84,22 @@ public class ApplicationDbContextInitialiser
 
         if (_userManager.Users.All(u => u.UserName != administrator.UserName))
         {
-            await _userManager.CreateAsync(administrator, "Administrator1!");
+            var userResult = await _userManager.CreateAsync(administrator, "Administrator1!");
+            if (!userResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to create seed user: {Errors}",
+                    string.Join(", ", userResult.Errors.Select(e => e.Description)));
+                return;
+            }
+
             if (!string.IsNullOrWhiteSpace(administratorRole.Name))
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                var roleAssignResult = await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                if (!roleAssignResult.Succeeded)
+                {
+                    _logger.LogWarning("Failed to assign 'Administrator' role to seed user: {Errors}",
+                        string.Join(", ", roleAssignResult.Errors.Select(e => e.Description)));
+                }
             }
         }
     }
