@@ -37,3 +37,7 @@
 - Redis connection string read independently in two DI files (Infrastructure/DependencyInjection.cs + Web/DependencyInjection.cs) — DRY violation across project boundaries, risk of divergence if one fallback changes
 - No explicit timeout on DB/Redis health checks — Docker curl timeout (3s) could expire before ASP.NET health check completes if dependency is slow but alive; operational tuning concern
 - PII safety test in RequestLoggerTests uses brittle negative string match (`!v.ToString()!.Contains("TestRequest {")`) — depends on serialization format, consider positive assertion
+
+## Deferred from: code review of story-1-5 (2026-03-29)
+
+- Redis `ConnectionMultiplexer` instance registered via `AddSingleton(instance)` in CustomWebApplicationFactory won't be disposed by DI — cosmetic in test context since process exits after tests and Testcontainer is disposed independently
