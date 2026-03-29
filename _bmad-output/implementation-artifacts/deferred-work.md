@@ -3,7 +3,7 @@
 ## Deferred from: code review of story-1-1 (2026-03-28)
 
 - CORS AllowAny* not environment-gated in Program.cs — production CORS hardening belongs to Story 1.2/security
-- Duplicate creation timestamps: BaseEntity.CreatedAt (DateTime) vs BaseAuditableEntity.Created (DateTimeOffset) — reconcile when entities created in Stories 2.x/3.x
+- ~~Duplicate creation timestamps: BaseEntity.CreatedAt (DateTime) vs BaseAuditableEntity.Created (DateTimeOffset) — reconcile when entities created in Stories 2.x/3.x~~ **RESOLVED** (prep-standardize-timestamps, 2026-03-29): Standardized to DateTimeOffset on BaseEntity.CreatedAt, removed redundant Created from BaseAuditableEntity
 - DB initializer calls EnsureDeletedAsync then EnsureCreatedAsync — destroys data every startup, Story 1.3 covers proper DB initialization
 - Hardcoded admin password "Administrator1!" in ApplicationDbContextInitialiser — template default, should be externalized before production
 - .GetAwaiter().GetResult() in DispatchDomainEventsInterceptor sync path — deadlock risk under load
@@ -41,3 +41,7 @@
 ## Deferred from: code review of story-1-5 (2026-03-29)
 
 - Redis `ConnectionMultiplexer` instance registered via `AddSingleton(instance)` in CustomWebApplicationFactory won't be disposed by DI — cosmetic in test context since process exits after tests and Testcontainer is disposed independently
+
+## Deferred from: prep-standardize-timestamps review (2026-03-29)
+
+- First domain entity migration will expose `BaseEntity.CreatedAt` as a new non-nullable `datetimeoffset` column — ensure migration includes appropriate default value or make column nullable during Story 2.1 migration generation

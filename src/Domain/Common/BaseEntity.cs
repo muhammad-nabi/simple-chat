@@ -5,7 +5,7 @@ namespace SimpleChat.Domain.Common;
 public abstract class BaseEntity
 {
     public long Id { get; private set; }
-    public DateTime CreatedAt { get; init; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     private readonly List<BaseEvent> _domainEvents = new();
 
