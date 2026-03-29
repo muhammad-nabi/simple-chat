@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Docker environment (contains secrets — use .env.example as template)
+.env
+
 # User-specific files
 *.rsuser
 *.suo

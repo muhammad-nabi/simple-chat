@@ -19,3 +19,11 @@
 - provideHttpClient() missing XSRF/fetch options — address when auth is implemented (Story 2.2)
 - Production bundle budget thresholds too permissive (1MB warn / 5MB error vs Angular default 500kB / 1MB)
 - No dark-mode token set — picoColorScheme script implied dark mode was planned but no token overrides exist
+
+## Deferred from: code review of story-1-2 (2026-03-29)
+
+- Dockerfile has no USER directive — app runs as root in container; add non-root user for security hardening
+- Special characters in MSSQL_SA_PASSWORD (e.g., `"`, `$`, `;`) could break the MSSQL healthcheck quoting or the connection string delimiter parsing
+- Redis has no authentication (requirepass not set) — any container on the network can read/write; add auth before production
+- JWT default secret is a committed known value in docker-compose.yml — enforce secret validation when JWT auth is implemented (Story 2.2)
+- AC5 upgrade path requires `image:` tag for registry pull — add when CI/CD pipeline pushes to a container registry (Story 1.5)

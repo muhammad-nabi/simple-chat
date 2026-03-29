@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/node_modules/
+.git/
+_bmad*/
+_bmad-output/
+tests/
+**/.vs/
+*.md
+!README.md
+.env
+artifacts/
+docs/

@@ -1,6 +1,6 @@
 # Story 1.2: Docker Compose & Container Configuration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -39,50 +39,50 @@ so that I can run the complete application stack without manual service configur
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create multi-stage Dockerfile (AC: #1, #4)
-  - [ ] 1.1 Create `Dockerfile` at repo root with multi-stage build (restore, build, frontend, publish, runtime)
-  - [ ] 1.2 Stage 1 (restore): Use `mcr.microsoft.com/dotnet/sdk:10.0` — copy `.slnx`, `Directory.Build.props`, `Directory.Packages.props`, `nuget.config`, all `.csproj` files, then `dotnet restore`
-  - [ ] 1.3 Stage 2 (build): Copy all source, run `dotnet build -c Release --no-restore`
-  - [ ] 1.4 Stage 3 (frontend): Use `node:22-alpine` — copy `src/Web/ClientApp/`, run `npm ci && npm run build -- --configuration production`
-  - [ ] 1.5 Stage 4 (publish): Run `dotnet publish src/Web/Web.csproj -c Release --no-build /p:SkipSpaPublish=true -o /app/publish` (see PublishRunWebpack note below)
-  - [ ] 1.6 Stage 4b: Copy Angular dist output (`dist/browser/`) from frontend stage into `/app/publish/wwwroot/`
-  - [ ] 1.7 Stage 5 (runtime): Use `mcr.microsoft.com/dotnet/aspnet:10.0` — copy published output, set `ASPNETCORE_URLS=http://+:8080`, expose port 8080, entrypoint `dotnet SimpleChat.Web.dll`
-  - [ ] 1.8 Add `.dockerignore` at repo root (exclude `node_modules`, `bin`, `obj`, `.git`, `_bmad*`, `tests`)
-  - [ ] 1.9 Modify `src/Web/Web.csproj`: add `Condition="'$(SkipSpaPublish)' != 'true'"` to the `PublishRunWebpack` target (prevents target from firing in Docker where Node.js is unavailable)
-  - [ ] 1.10 Verify `docker build` produces image under 500MB
+- [x] Task 1: Create multi-stage Dockerfile (AC: #1, #4)
+  - [x] 1.1 Create `Dockerfile` at repo root with multi-stage build (restore, build, frontend, publish, runtime)
+  - [x] 1.2 Stage 1 (restore): Use `mcr.microsoft.com/dotnet/sdk:10.0` — restore via `Web.csproj` (not `.slnx` which includes test projects excluded by `.dockerignore`)
+  - [x] 1.3 Stage 2 (build): Copy all source, run `dotnet build -c Release --no-restore`
+  - [x] 1.4 Stage 3 (frontend): Use `node:24-alpine` — copy `src/Web/ClientApp/`, run `npm ci && npm run build -- --configuration production`
+  - [x] 1.5 Stage 4 (publish): Run `dotnet publish src/Web/Web.csproj -c Release --no-build /p:SkipSpaPublish=true -o /app/publish`
+  - [x] 1.6 Stage 4b: Copy Angular dist output (`dist/browser/`) from frontend stage into `/app/publish/wwwroot/`
+  - [x] 1.7 Stage 5 (runtime): Use `mcr.microsoft.com/dotnet/aspnet:10.0` — copy published output, set `ASPNETCORE_URLS=http://+:8080`, expose port 8080, entrypoint `dotnet SimpleChat.Web.dll`
+  - [x] 1.8 Add `.dockerignore` at repo root (exclude `node_modules`, `bin`, `obj`, `.git`, `_bmad*`, `tests`)
+  - [x] 1.9 Modify `src/Web/Web.csproj`: add `Condition="'$(SkipSpaPublish)' != 'true'"` to the `PublishRunWebpack` target
+  - [x] 1.10 Verify `docker build` produces image under 500MB — **403MB**
 
-- [ ] Task 2: Create docker-compose.yml (AC: #1, #2, #3)
-  - [ ] 2.1 Create `docker-compose.yml` at repo root with 3 services: `app`, `mssql`, `redis`
-  - [ ] 2.2 `app` service: build from `.` (Dockerfile), port mapping `8080:8080`, `depends_on: { mssql: { condition: service_healthy }, redis: { condition: service_healthy } }`, environment variables for connection strings and config, volume mount `upload-data:/app/uploads`, `restart: unless-stopped`
-  - [ ] 2.3 `mssql` service: image `mcr.microsoft.com/mssql/server:2022-latest`, `ACCEPT_EULA=Y`, `MSSQL_SA_PASSWORD` from `.env`, `deploy.resources.limits.memory: 768m`, named volume `mssql-data:/var/opt/mssql`, healthcheck using `/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -No -Q "SELECT 1"`, `restart: unless-stopped`
-  - [ ] 2.4 `redis` service: image `redis:7-alpine`, no persistent volume (ephemeral), healthcheck using `redis-cli ping`, `restart: unless-stopped`
-  - [ ] 2.5 Define named volumes: `mssql-data`, `upload-data`
-  - [ ] 2.6 Define network: `simplechat-net` (bridge)
-  - [ ] 2.7 Set all app environment variable defaults via `${VAR:-default}` syntax referencing `.env`
+- [x] Task 2: Create docker-compose.yml (AC: #1, #2, #3)
+  - [x] 2.1 Create `docker-compose.yml` at repo root with 3 services: `app`, `mssql`, `redis`
+  - [x] 2.2 `app` service: build from `.`, port `8080:8080`, `depends_on` with `service_healthy` conditions, env vars, `upload-data:/app/uploads`, `restart: unless-stopped`
+  - [x] 2.3 `mssql` service: `mcr.microsoft.com/mssql/server:2022-latest`, `ACCEPT_EULA=Y`, `MSSQL_SA_PASSWORD` from `.env`, `mssql-data:/var/opt/mssql`, healthcheck via `sqlcmd`, `restart: unless-stopped`
+  - [x] 2.4 `redis` service: `redis:7-alpine`, no persistent volume, healthcheck via `redis-cli ping`, `restart: unless-stopped`
+  - [x] 2.5 Define named volumes: `mssql-data`, `upload-data`
+  - [x] 2.6 Define network: `simplechat-net` (bridge)
+  - [x] 2.7 Set all app environment variable defaults via `${VAR:-default}` syntax referencing `.env`
 
-- [ ] Task 3: Create MSSQL memory cap init script (AC: #1)
-  - [ ] 3.1 Create `docker/mssql-init.sh` — waits for SQL Server to start, then executes `sp_configure 'show advanced options', 1; RECONFIGURE; sp_configure 'max server memory (MB)', 512; RECONFIGURE;`
-  - [ ] 3.2 Mount script in compose via `command` override or entrypoint wrapper that runs the init script in background after SQL Server starts
+- [x] Task 3: Create MSSQL memory cap init script (AC: #1)
+  - [x] 3.1 Create `docker/mssql-init.sh` — waits for SQL Server, executes `sp_configure 'max server memory (MB)', 512; RECONFIGURE;`
+  - [x] 3.2 Mount script in compose, run in background via custom entrypoint command
 
-- [ ] Task 4: Create docker-compose.override.yml for development (AC: #3)
-  - [ ] 4.1 Create `docker-compose.override.yml` with development port mappings (MSSQL 1433, Redis 6379 exposed to host)
-  - [ ] 4.2 Add development-friendly environment overrides (verbose logging, relaxed settings)
+- [x] Task 4: Create docker-compose.override.yml for development (AC: #3)
+  - [x] 4.1 Create `docker-compose.override.yml` with development port mappings (MSSQL 1433, Redis 6379)
+  - [x] 4.2 Development environment override: `ASPNETCORE_ENVIRONMENT=Development`
 
-- [ ] Task 5: Create `.env.example` and `.env` (AC: #3)
-  - [ ] 5.1 Create `.env.example` at repo root documenting all compose variables with descriptions and safe defaults
-  - [ ] 5.2 Create `.env` with working development defaults (copy of `.env.example`)
-  - [ ] 5.3 Add `.env` to `.gitignore` (keep `.env.example` tracked)
+- [x] Task 5: Create `.env.example` and `.env` (AC: #3)
+  - [x] 5.1 Create `.env.example` at repo root with all compose variables documented
+  - [x] 5.2 Create `.env` with working development defaults
+  - [x] 5.3 Add `.env` to `.gitignore`
 
-- [ ] Task 6: Verification (AC: #1, #2, #3, #4, #5)
-  - [ ] 6.1 Run `docker-compose build` — image builds successfully
-  - [ ] 6.2 Run `docker-compose up` — all 3 containers start, mssql and redis healthchecks pass, app starts
-  - [ ] 6.3 Verify MSSQL memory cap: `docker exec` into mssql container and run `sqlcmd -Q "SELECT value_in_use FROM sys.configurations WHERE name = 'max server memory (MB)'"` — should return 512
-  - [ ] 6.4 Verify named volumes `mssql-data` and `upload-data` are created
-  - [ ] 6.5 Verify Redis has no persistent volume
-  - [ ] 6.6 Verify Docker image size < 500MB via `docker images`
-  - [ ] 6.7 Verify `restart: unless-stopped` is set on all services
-  - [ ] 6.8 Verify app container responds on port 8080 (may return errors until Story 1.3/1.4 — that's expected)
-  - [ ] 6.9 Verify `dotnet publish` still works outside Docker (the `SkipSpaPublish` condition only fires when explicitly set)
+- [x] Task 6: Verification (AC: #1, #2, #3, #4, #5)
+  - [x] 6.1 `docker compose build` — image builds successfully (403MB)
+  - [x] 6.2 `docker compose up` — all 3 containers start, healthchecks pass, app starts
+  - [x] 6.3 MSSQL memory cap verified: `SELECT value_in_use FROM sys.configurations WHERE name = 'max server memory (MB)'` returns **512**
+  - [x] 6.4 Named volumes `mssql-data` and `upload-data` created
+  - [x] 6.5 Redis has no persistent volume
+  - [x] 6.6 Docker image size 403MB < 500MB
+  - [x] 6.7 `restart: unless-stopped` set on all services
+  - [x] 6.8 App container responds on port 8080 — HTTP 200
+  - [x] 6.9 `dotnet publish` still works outside Docker (Angular build runs via PublishRunWebpack)
 
 ## Dev Notes
 
@@ -110,8 +110,8 @@ The Dockerfile MUST use multi-stage builds to keep image size under 500MB. The a
 **MSSQL memory cap is critical.** SQL Server defaults to consuming 80% of host memory. The architecture mandates capping at ~512MB to stay within the 3GB total stack budget.
 
 **WARNING: `MSSQL_MEMORY_LIMIT_MB` is NOT a real SQL Server Docker env var.** SQL Server will ignore it. The correct approach is two-layered:
-1. **Container-level:** Set `deploy.resources.limits.memory: 768m` in compose (gives OS headroom above the 512MB SQL internal cap)
-2. **SQL Server-level:** Run `sp_configure 'max server memory (MB)', 512; RECONFIGURE;` via an init script after SQL Server starts
+1. **SQL Server-level (primary):** Run `sp_configure 'max server memory (MB)', 512; RECONFIGURE;` via an init script after SQL Server starts
+2. **Container-level (optional):** Operators can add `deploy.resources.limits.memory` in compose for additional OS-level capping, but SQL Server requires headroom above the internal cap for OS processes — setting it too tight causes startup failures
 
 Create `docker/mssql-init.sh` that:
 - Waits for SQL Server to accept connections (loop with `sqlcmd -Q "SELECT 1"`)
@@ -277,9 +277,42 @@ This matches the architecture document's project structure which shows these fil
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (1M context)
 
 ### Debug Log References
+- `dotnet restore SimpleChat.slnx` fails in Docker because `.dockerignore` excludes `tests/` but `.slnx` references test projects — switched to restoring `src/Web/Web.csproj` directly (transitive restore pulls all src projects)
+- `node:22-alpine` npm version incompatible with lockfileVersion 3 (created by npm 11 / Node 25) — switched to `node:24-alpine`
+- MSSQL `deploy.resources.limits.memory: 768m` caused `Could not allocate initial 2500 lock blocks` — SQL Server needs more OS memory for its process beyond the 512MB internal cap. Removed container memory limit; rely on `sp_configure` internal cap only. Container-level memory limits can be added by operators who know their host capacity.
+- MSSQL `2022-latest` image is `linux/amd64` only — runs via Rosetta on ARM Mac with platform warning (expected, not blocking)
 
 ### Completion Notes List
+- Multi-stage Dockerfile: restore → build → frontend → publish → runtime (403MB final image)
+- docker-compose.yml: 3 services (app, mssql, redis) with healthchecks, depends_on conditions, restart policy, named volumes, explicit network
+- MSSQL memory capped at 512MB via `sp_configure` init script (`docker/mssql-init.sh`)
+- SA password and secrets managed via `.env` file (gitignored), `.env.example` tracked
+- `PublishRunWebpack` target in Web.csproj conditionally disabled via `SkipSpaPublish` MSBuild property
+- docker-compose.override.yml exposes MSSQL (1433) and Redis (6379) ports for local development
+- All verifications passed: 3 containers healthy, MSSQL memory=512, volumes created, app responds HTTP 200, image <500MB
+- All .NET tests pass (5/5), Angular builds successfully
+
+### Change Log
+- 2026-03-28: Story 1.2 implementation complete — Docker Compose stack with multi-stage Dockerfile, MSSQL memory cap, healthchecks, env-based configuration
+
+### Review Findings
+- [x] [Review][Defer] JWT default secret is a known committed value in docker-compose.yml — deferred to Story 2.2 (JWT implementation); nothing consumes this value yet
+- [x] [Review][Defer] AC5 upgrade path incompatible with build-only app service — deferred to Story 1.5 (CI/CD); production registry image tag belongs in CI pipeline setup
+- [x] [Review][Patch] mssql-init.sh has no exit on timeout — fixed: added explicit exit 1 after 60s timeout [docker/mssql-init.sh:9-22]
+- [x] [Review][Defer] Dockerfile has no USER directive — app runs as root in container [Dockerfile:39-51] — deferred, security hardening
+- [x] [Review][Defer] Special characters in MSSQL_SA_PASSWORD could break healthcheck or connection string [docker-compose.yml:47, docker-compose.yml:11] — deferred, edge case with special chars in passwords
+- [x] [Review][Defer] Redis has no authentication (requirepass not set) [docker-compose.yml:57-64] — deferred, production hardening
 
 ### File List
+- Dockerfile (new)
+- .dockerignore (new)
+- docker-compose.yml (new)
+- docker-compose.override.yml (new)
+- docker/mssql-init.sh (new)
+- .env.example (new)
+- .env (new, gitignored)
+- src/Web/Web.csproj (modified — added SkipSpaPublish condition to PublishRunWebpack target)
+- .gitignore (modified — added .env entry)

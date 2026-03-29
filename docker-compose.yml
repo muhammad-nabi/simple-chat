@@ -1,0 +1,73 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ConnectionStrings__SimpleChatDb=Server=mssql,1433;Database=SimpleChatDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Redis__ConnectionString=redis:6379
+      - Jwt__Secret=${JWT_SECRET:-CHANGE-THIS-IN-PRODUCTION-min-32-chars!!}
+      - Jwt__ExpiryMinutes=${JWT_EXPIRY_MINUTES:-30}
+      - FileUpload__MaxSizeMB=${FILE_UPLOAD_MAX_SIZE_MB:-10}
+      - FileUpload__StoragePath=/app/uploads
+    volumes:
+      - upload-data:/app/uploads
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - simplechat-net
+    # Uncomment after Story 1.4 implements health endpoints
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 60s
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./docker/mssql-init.sh:/usr/local/bin/mssql-init.sh:ro
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - /usr/local/bin/mssql-init.sh & /opt/mssql/bin/sqlservr
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -No -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - simplechat-net
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - simplechat-net
+
+volumes:
+  mssql-data:
+  upload-data:
+
+networks:
+  simplechat-net:
+    driver: bridge

@@ -1,0 +1,16 @@
+# Development overrides
+# Applied automatically when running: docker-compose up
+# For production only: docker-compose -f docker-compose.yml up
+
+services:
+  app:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  mssql:
+    ports:
+      - "1433:1433"
+
+  redis:
+    ports:
+      - "6379:6379"
