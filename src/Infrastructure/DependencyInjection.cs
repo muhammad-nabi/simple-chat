@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using StackExchange.Redis;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -51,6 +52,13 @@ public static class DependencyInjection
             .AddSignInManager()
             .AddDefaultTokenProviders()
             .AddApiEndpoints();
+
+        // Redis connection — used by health checks now, presence/caching in future stories
+        var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
+        var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+        redisOptions.AbortOnConnectFail = false;
+        builder.Services.AddSingleton<IConnectionMultiplexer>(
+            ConnectionMultiplexer.Connect(redisOptions));
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();

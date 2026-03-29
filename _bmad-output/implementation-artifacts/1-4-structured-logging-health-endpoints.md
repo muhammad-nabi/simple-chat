@@ -1,6 +1,6 @@
 # Story 1.4: Structured Logging & Health Endpoints
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -43,46 +43,52 @@ so that I can monitor the application using standard infrastructure tooling.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add Serilog NuGet packages and configure structured logging (AC: #1)
-  - [ ] 1.1 Add Serilog packages to `Directory.Packages.props`: `Serilog.AspNetCore` (includes Console sink, enrichers). Check NuGet for latest stable version compatible with .NET 10
-  - [ ] 1.2 In `src/Web/Program.cs`, replace default logging with Serilog bootstrap using `UseSerilog()` on the host builder
-  - [ ] 1.3 Configure Serilog to write JSON to stdout via `WriteTo.Console(new RenderedCompactJsonFormatter())` or `CompactJsonFormatter()`
-  - [ ] 1.4 Add enrichers: `Enrich.FromLogContext()`, `Enrich.WithMachineName()`, `Enrich.WithEnvironmentName()`
-  - [ ] 1.5 Set minimum log levels: Default=Information, Microsoft=Warning, Microsoft.Hosting.Lifetime=Information, Microsoft.EntityFrameworkCore=Warning
-  - [ ] 1.6 Add Serilog request logging middleware: `app.UseSerilogRequestLogging()` — place after health endpoints but before other middleware to avoid noisy health check logs
-  - [ ] 1.7 Update `appsettings.json` — remove the default `Logging` section (Serilog replaces it); optionally add `Serilog` configuration section for environment-specific overrides. **Create** `appsettings.Development.json` (does not exist yet) with Serilog MinimumLevel overridden to Debug for development
+- [x] Task 1: Add Serilog NuGet packages and configure structured logging (AC: #1)
+  - [x] 1.1 Add Serilog packages to `Directory.Packages.props`: `Serilog.AspNetCore` (includes Console sink, enrichers). Check NuGet for latest stable version compatible with .NET 10
+  - [x] 1.2 In `src/Web/Program.cs`, replace default logging with Serilog bootstrap using `UseSerilog()` on the host builder
+  - [x] 1.3 Configure Serilog to write JSON to stdout via `WriteTo.Console(new RenderedCompactJsonFormatter())` or `CompactJsonFormatter()`
+  - [x] 1.4 Add enrichers: `Enrich.FromLogContext()`, `Enrich.WithMachineName()`, `Enrich.WithEnvironmentName()`
+  - [x] 1.5 Set minimum log levels: Default=Information, Microsoft=Warning, Microsoft.Hosting.Lifetime=Information, Microsoft.EntityFrameworkCore=Warning
+  - [x] 1.6 Add Serilog request logging middleware: `app.UseSerilogRequestLogging()` — place after health endpoints but before other middleware to avoid noisy health check logs
+  - [x] 1.7 Update `appsettings.json` — remove the default `Logging` section (Serilog replaces it); optionally add `Serilog` configuration section for environment-specific overrides. **Create** `appsettings.Development.json` (does not exist yet) with Serilog MinimumLevel overridden to Debug for development
 
-- [ ] Task 2: Add `/health/live` liveness endpoint (AC: #2, #3)
+- [x] Task 2: Add `/health/live` liveness endpoint (AC: #2, #3)
   - Note: AC #2 (`/health/startup` returns 200) is already satisfied by Story 1.3 — no implementation needed, just verified in Task 6
-  - [ ] 2.1 Create `src/Web/HealthChecks/LivenessHealthCheck.cs` implementing `IHealthCheck` — always returns `HealthCheckResult.Healthy("Process is alive")`. This is a simple process-alive check (no dependency verification)
-  - [ ] 2.2 Register in `src/Web/DependencyInjection.cs`: `services.AddHealthChecks().AddCheck<LivenessHealthCheck>("liveness", tags: new[] { "live" })`
-  - [ ] 2.3 Map endpoint in `src/Web/Program.cs`: `app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = check => check.Tags.Contains("live") })` — place near existing `/health/startup` mapping
+  - [x] 2.1 Create `src/Web/HealthChecks/LivenessHealthCheck.cs` implementing `IHealthCheck` — always returns `HealthCheckResult.Healthy("Process is alive")`. This is a simple process-alive check (no dependency verification)
+  - [x] 2.2 Register in `src/Web/DependencyInjection.cs`: `services.AddHealthChecks().AddCheck<LivenessHealthCheck>("liveness", tags: new[] { "live" })`
+  - [x] 2.3 Map endpoint in `src/Web/Program.cs`: `app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = check => check.Tags.Contains("live") })` — place near existing `/health/startup` mapping
 
-- [ ] Task 3: Add `/health/ready` readiness endpoint with dependency checks (AC: #4, #5, #6)
-  - [ ] 3.1 Register EF Core database health check in `src/Web/DependencyInjection.cs`: `.AddDbContextCheck<ApplicationDbContext>("database", tags: new[] { "ready" })` — uses the already-installed `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` package (Directory.Packages.props line 24)
-  - [ ] 3.2 **Redis is NOT yet registered in the application.** Before adding the health check: (a) Add `StackExchange.Redis` package to `Directory.Packages.props`, (b) In `src/Infrastructure/DependencyInjection.cs`, register `IConnectionMultiplexer` as a singleton using `ConnectionMultiplexer.Connect()` with the connection string from configuration (key: `Redis__ConnectionString` or `ConnectionStrings:Redis`), (c) Add `AspNetCore.HealthChecks.Redis` package to `Directory.Packages.props`, (d) Register Redis health check: `.AddRedis(connectionString, name: "redis", tags: new[] { "ready" })`. The `Redis__ConnectionString=redis:6379` env var exists in `docker-compose.yml` but no C# code consumes it yet
-  - [ ] 3.3 Map endpoint in `src/Web/Program.cs`: `app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") })` — place near other health endpoints
-  - [ ] 3.4 Configure response writer to output JSON with individual check statuses for `/health/ready` — use `ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse` from `AspNetCore.HealthChecks.UI.Client` package OR write a minimal custom JSON writer to avoid extra package
+- [x] Task 3: Add `/health/ready` readiness endpoint with dependency checks (AC: #4, #5, #6)
+  - [x] 3.1 Register EF Core database health check in `src/Web/DependencyInjection.cs`: `.AddDbContextCheck<ApplicationDbContext>("database", tags: new[] { "ready" })` — uses the already-installed `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` package (Directory.Packages.props line 24)
+  - [x] 3.2 **Redis is NOT yet registered in the application.** Before adding the health check: (a) Add `StackExchange.Redis` package to `Directory.Packages.props`, (b) In `src/Infrastructure/DependencyInjection.cs`, register `IConnectionMultiplexer` as a singleton using `ConnectionMultiplexer.Connect()` with the connection string from configuration (key: `Redis__ConnectionString` or `ConnectionStrings:Redis`), (c) Add `AspNetCore.HealthChecks.Redis` package to `Directory.Packages.props`, (d) Register Redis health check: `.AddRedis(connectionString, name: "redis", tags: new[] { "ready" })`. The `Redis__ConnectionString=redis:6379` env var exists in `docker-compose.yml` but no C# code consumes it yet
+  - [x] 3.3 Map endpoint in `src/Web/Program.cs`: `app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") })` — place near other health endpoints
+  - [x] 3.4 Configure response writer to output JSON with individual check statuses for `/health/ready` — use `ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse` from `AspNetCore.HealthChecks.UI.Client` package OR write a minimal custom JSON writer to avoid extra package
 
-- [ ] Task 4: Update Docker healthcheck to use `/health/ready` for ongoing checks (AC: #4, #5, #6)
-  - [ ] 4.1 In `docker-compose.yml`, update the app healthcheck from `/health/startup` to `/health/ready` for ongoing container health monitoring. Architecture specifies: "Target `/health/startup` initially, `/health/ready` ongoing" — since Docker healthcheck doesn't support probe switching, use `/health/ready` (it implicitly passes when app is ready; startup probe is handled by `start_period`)
-  - [ ] 4.2 Verify `start_period: 40s` is sufficient to cover migration time before readiness checks begin
+- [x] Task 4: Update Docker healthcheck to use `/health/ready` for ongoing checks (AC: #4, #5, #6)
+  - [x] 4.1 In `docker-compose.yml`, update the app healthcheck from `/health/startup` to `/health/ready` for ongoing container health monitoring. Architecture specifies: "Target `/health/startup` initially, `/health/ready` ongoing" — since Docker healthcheck doesn't support probe switching, use `/health/ready` (it implicitly passes when app is ready; startup probe is handled by `start_period`)
+  - [x] 4.2 Verify `start_period: 40s` is sufficient to cover migration time before readiness checks begin
 
-- [ ] Task 5: Fix deferred logging issues (AC: #1)
-  - [ ] 5.1 Fix PII leak in `src/Application/Common/Behaviours/LoggingBehaviour.cs` — the `{@Request}` destructuring logs entire request objects including passwords/tokens. Replace with safe logging: log only the request type name, not the full object. [Deferred from Story 1.1 review]
-  - [ ] 5.2 Fix PII leak in `src/Application/Common/Behaviours/PerformanceBehaviour.cs` — same `{@Request}` destructuring issue as LoggingBehaviour. Remove or replace with safe logging of request type name only. [Deferred from Story 1.1 review]
-  - [ ] 5.3 Fix `src/Application/Common/Behaviours/PerformanceBehaviour.cs` — Stopwatch is never reset between calls; `_timer.ElapsedMilliseconds` accumulates. Use `_timer.Restart()` instead of `_timer.Start()` — `Restart()` resets and starts in one call. [Deferred from Story 1.1 review]
+- [x] Task 5: Fix deferred logging issues (AC: #1)
+  - [x] 5.1 Fix PII leak in `src/Application/Common/Behaviours/LoggingBehaviour.cs` — the `{@Request}` destructuring logs entire request objects including passwords/tokens. Replace with safe logging: log only the request type name, not the full object. [Deferred from Story 1.1 review]
+  - [x] 5.2 Fix PII leak in `src/Application/Common/Behaviours/PerformanceBehaviour.cs` — same `{@Request}` destructuring issue as LoggingBehaviour. Remove or replace with safe logging of request type name only. [Deferred from Story 1.1 review]
+  - [x] 5.3 Fix `src/Application/Common/Behaviours/PerformanceBehaviour.cs` — Stopwatch is never reset between calls; `_timer.ElapsedMilliseconds` accumulates. Use `_timer.Restart()` instead of `_timer.Start()` — `Restart()` resets and starts in one call. [Deferred from Story 1.1 review]
 
-- [ ] Task 6: Verification (AC: #1-#6)
-  - [ ] 6.1 `docker compose up` — verify JSON structured logs appear on stdout from app container
-  - [ ] 6.2 Verify log entries contain: timestamp, level, message template, properties as structured fields
-  - [ ] 6.3 `curl http://localhost:8080/health/startup` — returns 200 with healthy status
-  - [ ] 6.4 `curl http://localhost:8080/health/live` — returns 200 with healthy status
-  - [ ] 6.5 `curl http://localhost:8080/health/ready` — returns 200 with MSSQL and Redis status included
-  - [ ] 6.6 Stop MSSQL container → `curl /health/ready` returns 503
-  - [ ] 6.7 Stop Redis container → `curl /health/ready` returns 503
-  - [ ] 6.8 All existing .NET tests still pass
-  - [ ] 6.9 Verify no PII (passwords, tokens) appears in log output during login/registration flows (when implemented, verify with seed user creation logs for now)
+- [x] Task 6: Verification (AC: #1-#6)
+  - [x] 6.1 `docker compose up` — verify JSON structured logs appear on stdout from app container
+  - [x] 6.2 Verify log entries contain: timestamp, level, message template, properties as structured fields
+  - [x] 6.3 `curl http://localhost:8080/health/startup` — returns 200 with healthy status
+  - [x] 6.4 `curl http://localhost:8080/health/live` — returns 200 with healthy status
+  - [x] 6.5 `curl http://localhost:8080/health/ready` — returns 200 with MSSQL and Redis status included
+  - [x] 6.6 Stop MSSQL container → `curl /health/ready` returns 503
+  - [x] 6.7 Stop Redis container → `curl /health/ready` returns 503
+  - [x] 6.8 All existing .NET tests still pass
+  - [x] 6.9 Verify no PII (passwords, tokens) appears in log output during login/registration flows (when implemented, verify with seed user creation logs for now)
+
+### Review Findings
+
+- [x] [Review][Defer] Redis connection string read in two DI files (Infrastructure + Web) — DRY violation across project boundaries, risk of divergence if one fallback changes. Centralize in future refactor. — deferred, cross-project code smell
+- [x] [Review][Defer] No explicit health check timeout on DB/Redis checks — Docker curl timeout (3s) could expire before ASP.NET health check completes if dependency is slow but alive. Operational tuning for future. — deferred, operational concern
+- [x] [Review][Defer] PII safety test uses brittle negative string match `!v.ToString()!.Contains("TestRequest {")` — depends on serialization format. Consider positive assertion on expected log content. — deferred, minor test robustness
 
 ## Dev Notes
 
@@ -279,10 +285,52 @@ src/Web/HealthChecks/StartupHealthCheck.cs            # Already correct from Sto
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (1M context)
 
 ### Debug Log References
 
+- Build error: `WithMachineName()` / `WithEnvironmentName()` require separate `Serilog.Enrichers.Environment` package. Resolved by using `Enrich.WithProperty()` instead.
+- Build error: Redis `ConnectionMultiplexer.Connect()` fails during OpenAPI doc generation when Redis is unavailable. Resolved by setting `AbortOnConnectFail = false` via `ConfigurationOptions`.
+- Test error: `RequestHandlerDelegate<TResponse>` in MediatR 14 takes a `CancellationToken` parameter. Fixed lambda signature in tests.
+
 ### Completion Notes List
 
+- Integrated Serilog.AspNetCore 10.0.0 with two-stage bootstrap logging and RenderedCompactJsonFormatter for JSON stdout output
+- Configured Serilog minimum levels: Information default, Warning for Microsoft/EF Core namespaces
+- Created appsettings.Development.json with Debug minimum level for development
+- Added UseSerilogRequestLogging() after health endpoints to avoid noisy healthcheck logs
+- Created LivenessHealthCheck (always healthy) mapped to /health/live
+- Registered EF Core database health check and Redis health check for /health/ready endpoint
+- Established Redis IConnectionMultiplexer singleton in Infrastructure DI (foundation for future Presence/Caching stories)
+- Custom JSON response writer for /health/ready shows individual check statuses
+- Updated Docker healthcheck from /health/startup to /health/ready
+- Fixed PII leak in LoggingBehaviour — removed {@Request} destructuring that would log passwords/tokens
+- Fixed PII leak in PerformanceBehaviour — same {@Request} destructuring removal
+- Fixed Stopwatch accumulation in PerformanceBehaviour — changed Start() to Restart()
+- Added unit tests for PerformanceBehaviour (no-warning on fast requests, no time accumulation)
+- Added PII safety test for LoggingBehaviour
+- All 8 unit tests pass, full solution builds clean
+
+### Change Log
+
+- 2026-03-29: Story 1.4 implemented — Serilog structured logging, three-tier health endpoints, Redis connection foundation, PII fixes
+
 ### File List
+
+Modified:
+- Directory.Packages.props (added Serilog.AspNetCore, StackExchange.Redis, AspNetCore.HealthChecks.Redis)
+- src/Web/Web.csproj (added Serilog.AspNetCore, AspNetCore.HealthChecks.Redis package refs)
+- src/Infrastructure/Infrastructure.csproj (added StackExchange.Redis package ref)
+- src/Web/Program.cs (Serilog bootstrap, UseSerilogRequestLogging, /health/live, /health/ready mappings)
+- src/Web/DependencyInjection.cs (liveness + readiness health check registration)
+- src/Infrastructure/DependencyInjection.cs (Redis IConnectionMultiplexer singleton)
+- src/Web/appsettings.json (replaced Logging section with Serilog config)
+- docker-compose.yml (healthcheck /health/startup -> /health/ready)
+- src/Application/Common/Behaviours/LoggingBehaviour.cs (removed PII-leaking {@Request})
+- src/Application/Common/Behaviours/PerformanceBehaviour.cs (removed PII-leaking {@Request}, fixed Stopwatch with Restart())
+- tests/Application.UnitTests/Common/Behaviours/RequestLoggerTests.cs (added PII safety test)
+
+Created:
+- src/Web/HealthChecks/LivenessHealthCheck.cs
+- src/Web/appsettings.Development.json
+- tests/Application.UnitTests/Common/Behaviours/PerformanceBehaviourTests.cs

@@ -24,7 +24,7 @@ services:
     networks:
       - simplechat-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/startup"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 5s
       timeout: 3s
       retries: 10

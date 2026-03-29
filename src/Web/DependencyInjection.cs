@@ -35,8 +35,12 @@ public static class DependencyInjection
 
         // Health checks — singleton first so MarkReady() and health check use the same instance
         builder.Services.AddSingleton<StartupHealthCheck>();
+        var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
         builder.Services.AddHealthChecks()
-            .AddCheck<StartupHealthCheck>("startup", tags: new[] { "startup" });
+            .AddCheck<StartupHealthCheck>("startup", tags: new[] { "startup" })
+            .AddCheck<LivenessHealthCheck>("liveness", tags: new[] { "live" })
+            .AddDbContextCheck<ApplicationDbContext>("database", tags: new[] { "ready" })
+            .AddRedis(redisConnectionString, name: "redis", tags: new[] { "ready" });
     }
 
     public static void AddKeyVaultIfConfigured(this IHostApplicationBuilder builder)

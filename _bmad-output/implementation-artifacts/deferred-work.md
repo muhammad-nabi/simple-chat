@@ -31,3 +31,9 @@
 ## Deferred from: code review of story-1-3 (2026-03-29)
 
 - Seed data hardcoded password "Administrator1!" now runs in all environments (not just Development) — externalization deferred to Story 2.x per spec
+
+## Deferred from: code review of story-1-4 (2026-03-29)
+
+- Redis connection string read independently in two DI files (Infrastructure/DependencyInjection.cs + Web/DependencyInjection.cs) — DRY violation across project boundaries, risk of divergence if one fallback changes
+- No explicit timeout on DB/Redis health checks — Docker curl timeout (3s) could expire before ASP.NET health check completes if dependency is slow but alive; operational tuning concern
+- PII safety test in RequestLoggerTests uses brittle negative string match (`!v.ToString()!.Contains("TestRequest {")`) — depends on serialization format, consider positive assertion

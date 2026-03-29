@@ -44,4 +44,25 @@ public class RequestLoggerTests
 
         _identityService.Verify(i => i.GetUserNameAsync(It.IsAny<string>()), Times.Never);
     }
+
+    [Test]
+    public async Task ShouldNotLogRequestObject_ToPreventPiiExposure()
+    {
+        _user.Setup(x => x.Id).Returns(Guid.NewGuid().ToString());
+        _identityService.Setup(x => x.GetUserNameAsync(It.IsAny<string>())).ReturnsAsync("testuser");
+
+        var requestLogger = new LoggingBehaviour<TestRequest>(_logger.Object, _user.Object, _identityService.Object);
+
+        await requestLogger.Process(new TestRequest(), new CancellationToken());
+
+        // Verify that logging was called with Information level
+        _logger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => !v.ToString()!.Contains("TestRequest {")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
 }
