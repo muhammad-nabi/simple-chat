@@ -24,7 +24,7 @@
 
 - Dockerfile has no USER directive — app runs as root in container; add non-root user for security hardening
 - Special characters in MSSQL_SA_PASSWORD (e.g., `"`, `$`, `;`) could break the MSSQL healthcheck quoting or the connection string delimiter parsing
-- Redis has no authentication (requirepass not set) — any container on the network can read/write; add auth before production
+- ~~Redis has no authentication (requirepass not set) — any container on the network can read/write; add auth before production~~ **RESOLVED** (prep-redis-requirepass, 2026-03-29): Added requirepass via Docker Compose command, password in .env, propagated through connection strings
 - JWT default secret is a committed known value in docker-compose.yml — enforce secret validation when JWT auth is implemented (Story 2.2)
 - AC5 upgrade path requires `image:` tag for registry pull — add when CI/CD pipeline pushes to a container registry (Story 1.5)
 
@@ -45,3 +45,8 @@
 ## Deferred from: prep-standardize-timestamps review (2026-03-29)
 
 - First domain entity migration will expose `BaseEntity.CreatedAt` as a new non-nullable `datetimeoffset` column — ensure migration includes appropriate default value or make column nullable during Story 2.1 migration generation
+
+## Deferred from: prep-redis-requirepass review (2026-03-29)
+
+- Redis password passed via `--requirepass` CLI arg is visible in `docker inspect` and process list — use Docker secrets or config file for production hardening
+- Redis connection string with password embedded — special characters in future passwords could break StackExchange.Redis `ConfigurationOptions.Parse()` delimiter parsing

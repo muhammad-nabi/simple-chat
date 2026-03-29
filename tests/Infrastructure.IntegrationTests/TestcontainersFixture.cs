@@ -9,11 +9,14 @@ public class TestcontainersFixture
     private static MsSqlContainer? _msSqlContainer;
     private static RedisContainer? _redisContainer;
 
+    private const string RedisPassword = "testpassword";
+
     public static string MsSqlConnectionString => _msSqlContainer?.GetConnectionString()
         ?? throw new InvalidOperationException("MSSQL container not started.");
 
-    public static string RedisConnectionString => _redisContainer?.GetConnectionString()
-        ?? throw new InvalidOperationException("Redis container not started.");
+    public static string RedisConnectionString => _redisContainer is not null
+        ? $"{_redisContainer.GetConnectionString()},password={RedisPassword}"
+        : throw new InvalidOperationException("Redis container not started.");
 
     [OneTimeSetUp]
     public async Task OneTimeSetUp()
@@ -22,6 +25,7 @@ public class TestcontainersFixture
             .Build();
 
         _redisContainer = new RedisBuilder("redis:7-alpine")
+            .WithCommand("redis-server", "--requirepass", RedisPassword)
             .Build();
 
         await Task.WhenAll(

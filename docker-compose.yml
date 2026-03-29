@@ -8,7 +8,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ConnectionStrings__SimpleChatDb=Server=mssql,1433;Database=SimpleChatDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
-      - Redis__ConnectionString=redis:6379
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:-SimpleChat_Redis_Dev!}
       - Jwt__Secret=${JWT_SECRET:-CHANGE-THIS-IN-PRODUCTION-min-32-chars!!}
       - Jwt__ExpiryMinutes=${JWT_EXPIRY_MINUTES:-30}
       - FileUpload__MaxSizeMB=${FILE_UPLOAD_MAX_SIZE_MB:-10}
@@ -54,11 +54,14 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-SimpleChat_Redis_Dev!}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping 2>/dev/null | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 3
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-SimpleChat_Redis_Dev!}
     restart: unless-stopped
     networks:
       - simplechat-net
