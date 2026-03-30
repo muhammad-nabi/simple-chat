@@ -5,7 +5,7 @@
 - CORS AllowAny* not environment-gated in Program.cs — production CORS hardening belongs to Story 1.2/security
 - ~~Duplicate creation timestamps: BaseEntity.CreatedAt (DateTime) vs BaseAuditableEntity.Created (DateTimeOffset) — reconcile when entities created in Stories 2.x/3.x~~ **RESOLVED** (prep-standardize-timestamps, 2026-03-29): Standardized to DateTimeOffset on BaseEntity.CreatedAt, removed redundant Created from BaseAuditableEntity
 - DB initializer calls EnsureDeletedAsync then EnsureCreatedAsync — destroys data every startup, Story 1.3 covers proper DB initialization
-- Hardcoded admin password "Administrator1!" in ApplicationDbContextInitialiser — template default, should be externalized before production
+- ~~Hardcoded admin password "Administrator1!" in ApplicationDbContextInitialiser — template default, should be externalized before production~~ **RESOLVED** (Story 2.1, 2026-03-30): Seed user removed entirely; first-user admin designation via RegisterCommand
 - .GetAwaiter().GetResult() in DispatchDomainEventsInterceptor sync path — deadlock risk under load
 - Domain events dispatched before SaveChanges commits — side-effects fire for uncommitted state
 - Domain event handler exception leaves events partially cleared — no retry possible for failed events
@@ -30,7 +30,7 @@
 
 ## Deferred from: code review of story-1-3 (2026-03-29)
 
-- Seed data hardcoded password "Administrator1!" now runs in all environments (not just Development) — externalization deferred to Story 2.x per spec
+- ~~Seed data hardcoded password "Administrator1!" now runs in all environments (not just Development) — externalization deferred to Story 2.x per spec~~ **RESOLVED** (Story 2.1, 2026-03-30): Seed user removed entirely; first-user admin designation via RegisterCommand
 
 ## Deferred from: code review of story-1-4 (2026-03-29)
 
@@ -50,3 +50,17 @@
 
 - Redis password passed via `--requirepass` CLI arg is visible in `docker inspect` and process list — use Docker secrets or config file for production hardening
 - Redis connection string with password embedded — special characters in future passwords could break StackExchange.Redis `ConfigurationOptions.Parse()` delimiter parsing
+
+## Deferred from: code review of story-2-1 (2026-03-30)
+
+- TOCTOU race condition on first-user-admin designation — two concurrent registrations on empty DB can both get Admin role; no transaction/lock/constraint. Single-instance MVP, sub-millisecond window; revisit if multi-instance deployment
+- Redis failure after user creation orphans user record — user exists in SQL but has no session and cannot re-register; Story 2.2 login endpoint provides fallback
+- CORS `SetIsOriginAllowed(_ => true)` + `AllowCredentials()` allows any origin to make cookie-bearing requests — Story 2.2 covers CORS hardening
+- Auth state in memory-only BehaviorSubject lost on page refresh — Story 2.3 covers session persistence and token refresh
+- Hardcoded JWT secret `CHANGE-THIS-IN-PRODUCTION-min-32-chars!!` in appsettings.json with no startup validation — Story 2.2 covers JWT secret validation
+- Non-atomic Redis session operations in `StoreSessionAsync` (3 separate commands) — orphaned tracking key is cosmetic, session key itself works; low risk for MVP
+- No rate limiting on `/api/auth/register` endpoint — anonymous endpoint allows unlimited account creation and email enumeration; cross-cutting concern for all public endpoints
+- Email enumeration via duplicate-email error message — spec (AC #3) explicitly requires "An account with this email already exists"; accept as design decision
+- JWT issuer/audience validation disabled — spec says single-instance app, skip validation; revisit if multi-instance deployment needed
+- No refresh endpoint — refresh token stored in HttpOnly cookie and Redis but no `/api/auth/refresh` endpoint exists; Story 2.3 covers this
+- BcryptPasswordHasher never returns `SuccessRehashNeeded` — no bcrypt work factor migration needed for MVP; revisit if work factor is increased

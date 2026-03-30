@@ -1,29 +1,14 @@
-﻿using SimpleChat.Infrastructure.Identity;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace SimpleChat.Web.Endpoints;
 
 public class Users : IEndpointGroup
 {
+    public static string? RoutePrefix => "/api/users";
+
     public static void Map(RouteGroupBuilder groupBuilder)
     {
-        groupBuilder.MapIdentityApi<ApplicationUser>();
-
-        groupBuilder.MapPost(Logout, "logout").RequireAuthorization();
-    }
-
-    [EndpointSummary("Log out")]
-    [EndpointDescription("Logs out the current user by clearing the authentication cookie.")]
-    public static async Task<Results<Ok, UnauthorizedHttpResult>> Logout(SignInManager<ApplicationUser> signInManager, [FromBody] object empty)
-    {
-        if (empty != null)
-        {
-            await signInManager.SignOutAsync();
-            return TypedResults.Ok();
-        }
-
-        return TypedResults.Unauthorized();
+        // Auth endpoints moved to Auth endpoint group (JWT-based)
+        // User management endpoints will be added in Epic 8
     }
 }

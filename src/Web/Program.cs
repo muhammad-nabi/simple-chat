@@ -85,7 +85,11 @@ app.UseHttpsRedirection();
 app.UseCors(static builder =>
     builder.AllowAnyMethod()
         .AllowAnyHeader()
-        .AllowAnyOrigin());
+        .SetIsOriginAllowed(_ => true)
+        .AllowCredentials());
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseFileServer();
 

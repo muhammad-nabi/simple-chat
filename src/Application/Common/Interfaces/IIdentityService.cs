@@ -1,4 +1,5 @@
 ﻿using SimpleChat.Application.Common.Models;
+using SimpleChat.Domain.Common.Enums;
 
 namespace SimpleChat.Application.Common.Interfaces;
 
@@ -11,6 +12,13 @@ public interface IIdentityService
     Task<bool> AuthorizeAsync(string userId, string policyName);
 
     Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password);
+
+    Task<(Result Result, string UserId)> CreateUserAsync(
+        string email, string displayName, string password, UserRole role);
+
+    Task<bool> EmailExistsAsync(string email);
+
+    Task<bool> AnyUsersExistAsync();
 
     Task<Result> DeleteUserAsync(string userId);
 }

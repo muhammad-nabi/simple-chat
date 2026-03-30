@@ -1,4 +1,3 @@
-using SimpleChat.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -24,14 +23,12 @@ public class ApplicationDbContextInitialiser
 {
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
-    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, RoleManager<IdentityRole> roleManager)
     {
         _logger = logger;
         _context = context;
-        _userManager = userManager;
         _roleManager = roleManager;
     }
 
@@ -65,42 +62,21 @@ public class ApplicationDbContextInitialiser
 
     public async Task TrySeedAsync()
     {
-        // Default roles
-        var administratorRole = new IdentityRole("Administrator");
-
-        if (_roleManager.Roles.All(r => r.Name != administratorRole.Name))
+        // Seed roles — Admin and Member must exist for role-based authorization
+        var roles = new[] { "Admin", "Member" };
+        foreach (var roleName in roles)
         {
-            var roleResult = await _roleManager.CreateAsync(administratorRole);
-            if (!roleResult.Succeeded)
+            if (!await _roleManager.RoleExistsAsync(roleName))
             {
-                _logger.LogWarning("Failed to create seed role 'Administrator': {Errors}",
-                    string.Join(", ", roleResult.Errors.Select(e => e.Description)));
-                return;
-            }
-        }
-
-        // Default users
-        var administrator = new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost" };
-
-        if (_userManager.Users.All(u => u.UserName != administrator.UserName))
-        {
-            var userResult = await _userManager.CreateAsync(administrator, "Administrator1!");
-            if (!userResult.Succeeded)
-            {
-                _logger.LogWarning("Failed to create seed user: {Errors}",
-                    string.Join(", ", userResult.Errors.Select(e => e.Description)));
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(administratorRole.Name))
-            {
-                var roleAssignResult = await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
-                if (!roleAssignResult.Succeeded)
+                var roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
+                if (!roleResult.Succeeded)
                 {
-                    _logger.LogWarning("Failed to assign 'Administrator' role to seed user: {Errors}",
-                        string.Join(", ", roleAssignResult.Errors.Select(e => e.Description)));
+                    _logger.LogWarning("Failed to create seed role '{RoleName}': {Errors}",
+                        roleName, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
                 }
             }
         }
+
+        // No default user seeded — first-user admin designation handled by RegisterCommand
     }
 }

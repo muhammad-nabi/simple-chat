@@ -2,6 +2,7 @@ using SimpleChat.Application.Common.Interfaces;
 using SimpleChat.Infrastructure.Data;
 using SimpleChat.Infrastructure.Data.Interceptors;
 using SimpleChat.Infrastructure.Identity;
+using SimpleChat.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -36,12 +37,28 @@ public static class DependencyInjection
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
 
+        // JWT Bearer authentication — replaces cookie-based Identity auth
+        var jwtSecret = builder.Configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException("JWT_SECRET is not configured.");
+
         builder.Services.AddAuthentication(options =>
             {
-                options.DefaultScheme = IdentityConstants.ApplicationScheme;
-                options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+                options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddIdentityCookies();
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                        System.Text.Encoding.UTF8.GetBytes(jwtSecret)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1),
+                };
+            });
 
         builder.Services.AddAuthorizationBuilder();
 
@@ -49,9 +66,7 @@ public static class DependencyInjection
             .AddIdentityCore<ApplicationUser>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddSignInManager()
-            .AddDefaultTokenProviders()
-            .AddApiEndpoints();
+            .AddDefaultTokenProviders();
 
         // Redis connection — used by health checks now, presence/caching in future stories
         var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
@@ -62,5 +77,9 @@ public static class DependencyInjection
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();
+        builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, BcryptPasswordHasher>();
+        builder.Services.AddScoped<IAuthenticationProvider, BcryptAuthenticationProvider>();
+        builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        builder.Services.AddScoped<ISessionService, RedisSessionService>();
     }
 }

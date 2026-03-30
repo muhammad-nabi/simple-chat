@@ -14,6 +14,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         // Override configuration so health checks and DI read the Testcontainer endpoints
         builder.UseSetting("ConnectionStrings:SimpleChatDb", TestcontainersFixture.MsSqlConnectionString);
         builder.UseSetting("Redis:ConnectionString", TestcontainersFixture.RedisConnectionString);
+        builder.UseSetting("Jwt:Secret", "integration-test-secret-must-be-at-least-32-chars!!");
+        builder.UseSetting("Jwt:ExpiryMinutes", "30");
 
         builder.ConfigureServices(services =>
         {

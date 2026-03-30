@@ -1,5 +1,6 @@
 using SimpleChat.Application.Common.Interfaces;
 using SimpleChat.Application.Common.Models;
+using SimpleChat.Domain.Common.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,7 @@ public class IdentityService : IIdentityService
         {
             UserName = userName,
             Email = userName,
+            DisplayName = userName,
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -63,6 +65,33 @@ public class IdentityService : IIdentityService
         var result = await _authorizationService.AuthorizeAsync(principal, policyName);
 
         return result.Succeeded;
+    }
+
+    public async Task<(Result Result, string UserId)> CreateUserAsync(
+        string email, string displayName, string password, UserRole role)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = displayName,
+            Role = role,
+            IsActive = true,
+        };
+
+        var result = await _userManager.CreateAsync(user, password);
+
+        return (result.ToApplicationResult(), user.Id);
+    }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        return await _userManager.Users.AnyAsync(u => u.Email == email);
+    }
+
+    public async Task<bool> AnyUsersExistAsync()
+    {
+        return await _userManager.Users.AnyAsync();
     }
 
     public async Task<Result> DeleteUserAsync(string userId)

@@ -1,0 +1,77 @@
+<div class="register-container">
+  <div class="register-card">
+    <h1>Create your account</h1>
+
+    @if (serverError) {
+      <div class="server-error" role="alert">
+        {{ serverError }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-field">
+        <label for="displayName">Display Name</label>
+        <input
+          id="displayName"
+          type="text"
+          formControlName="displayName"
+          placeholder="e.g. Jane Smith"
+          [attr.aria-describedby]="displayName.touched && displayName.errors ? 'displayName-error' : null"
+          [class.error]="displayName.touched && displayName.errors"
+        />
+        @if (displayName.touched && displayName.errors) {
+          <span id="displayName-error" class="field-error" role="alert">
+            {{ getErrorMessage('displayName') }}
+          </span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="e.g. jane@example.com"
+          [attr.aria-describedby]="email.touched && email.errors ? 'email-error' : null"
+          [class.error]="email.touched && email.errors"
+        />
+        @if (email.touched && email.errors) {
+          <span id="email-error" class="field-error" role="alert">
+            {{ getErrorMessage('email') }}
+          </span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="At least 8 characters"
+          [attr.aria-describedby]="password.touched && password.errors ? 'password-error' : null"
+          [class.error]="password.touched && password.errors"
+        />
+        @if (password.touched && password.errors) {
+          <span id="password-error" class="field-error" role="alert">
+            {{ getErrorMessage('password') }}
+          </span>
+        }
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        [disabled]="form.invalid || isSubmitting"
+      >
+        @if (isSubmitting) {
+          <span class="spinner"></span>
+          Creating account...
+        } @else {
+          Register
+        }
+      </button>
+    </form>
+  </div>
+</div>
