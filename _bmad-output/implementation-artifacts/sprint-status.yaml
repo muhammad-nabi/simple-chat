@@ -1,5 +1,5 @@
 # generated: 2026-03-28
-# last_updated: 2026-03-29 # retro completed
+# last_updated: 2026-03-30
 # project: simple-chat
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-28
-last_updated: 2026-03-29
+last_updated: 2026-03-30
 project: simple-chat
 project_key: NOKEY
 tracking_system: file-system
@@ -52,8 +52,8 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: User Authentication & Account Management
-  epic-2: backlog
-  2-1-user-registration-with-first-user-admin-designation: backlog
+  epic-2: in-progress
+  2-1-user-registration-with-first-user-admin-designation: ready-for-dev
   2-2-user-login-jwt-session: backlog
   2-3-session-persistence-token-refresh: backlog
   2-4-logout-session-invalidation: backlog
