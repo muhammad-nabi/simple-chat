@@ -1,5 +1,6 @@
 using MediatR;
 using SimpleChat.Application.Common.Interfaces;
+using SimpleChat.Application.Identity.Constants;
 using SimpleChat.Domain.Common.Enums;
 using ValidationException = SimpleChat.Application.Common.Exceptions.ValidationException;
 using FluentValidation.Results;
@@ -53,7 +54,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             userId, request.Email, request.DisplayName, role);
 
         // Store refresh token session in Redis
-        await _sessionService.StoreSessionAsync(userId, refreshToken, TimeSpan.FromDays(7));
+        await _sessionService.StoreSessionAsync(userId, refreshToken, TimeSpan.FromDays(TokenConstants.RefreshTokenExpiryDays));
 
         return new RegisterResponse(
             accessToken, refreshToken, userId, request.DisplayName, request.Email, role.ToString());

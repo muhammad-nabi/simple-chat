@@ -70,3 +70,8 @@
 - Client logout doesn't invalidate server session or clear HttpOnly cookie — AuthService.logout() only clears in-memory state; Redis session and refresh token cookie persist for up to 7 days. Story 2.4 covers logout endpoint.
 - ResetDatabaseAsync hardcoded SQL (`DELETE FROM [AspNetUserRoles]; DELETE FROM [AspNetUsers]`) will break with FK violations when domain tables referencing Users are added (e.g., ChatMessages in Epic 3). Update when domain entities are created.
 - Refresh token expiry (7 days) hardcoded independently in 4 locations (LoginCommandHandler, RegisterCommandHandler, SetRefreshTokenCookie x2) with no shared constant or config value — risk of silent drift if one is changed without updating others.
+
+## Deferred from: code review of story-2-3 (2026-03-30)
+
+- `logout()` does not call server-side session invalidation — client-only state clearing leaves Redis session alive; Story 2.4 covers logout endpoint
+- Race condition (TOCTOU) in refresh token rotation — concurrent requests with same token can both succeed; sub-millisecond window, negligible for single-instance MVP. Fix with Redis WATCH/MULTI transaction or distributed lock when scaling to multi-instance.

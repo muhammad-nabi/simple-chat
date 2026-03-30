@@ -145,4 +145,17 @@ public class IdentityService : IIdentityService
         BCrypt.Net.BCrypt.Verify(password, DummyBcryptHash);
         return Task.CompletedTask;
     }
+
+    public async Task<(string UserId, string DisplayName, string Email, UserRole Role, bool IsActive)?>
+        FindUserByIdAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            return null;
+        }
+
+        return (user.Id, user.DisplayName, user.Email ?? string.Empty, user.Role, user.IsActive);
+    }
 }

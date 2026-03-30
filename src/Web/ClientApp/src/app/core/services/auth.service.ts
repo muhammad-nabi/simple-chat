@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap, catchError, shareReplay, finalize, map } from 'rxjs';
 
 export interface RegisterRequest {
   displayName: string;
@@ -38,6 +38,9 @@ export class AuthService {
   readonly isAuthenticated$ = new BehaviorSubject<boolean>(false);
   readonly currentUser$: Observable<CurrentUser | null> = this.user$.asObservable();
 
+  /** Shared observable for in-flight refresh — prevents thundering herd */
+  private refreshInFlight$: Observable<AuthResponse> | null = null;
+
   get accessToken(): string | null {
     return this.accessToken$.value;
   }
@@ -60,6 +63,43 @@ export class AuthService {
           this.setSession(response);
         }),
       );
+  }
+
+  /**
+   * Refresh the access token using the HttpOnly refresh token cookie.
+   * Returns a shared observable — concurrent callers get the same in-flight request.
+   */
+  refresh(): Observable<AuthResponse> {
+    if (this.refreshInFlight$) {
+      return this.refreshInFlight$;
+    }
+
+    this.refreshInFlight$ = this.http
+      .post<AuthResponse>('/api/auth/refresh', {}, { withCredentials: true })
+      .pipe(
+        tap(response => {
+          this.setSession(response);
+        }),
+        shareReplay(1),
+        finalize(() => {
+          this.refreshInFlight$ = null;
+        }),
+      );
+
+    return this.refreshInFlight$;
+  }
+
+  /**
+   * Called by APP_INITIALIZER on app startup.
+   * Attempts to restore session from refresh token cookie.
+   * Returns Observable<boolean> — true if session restored, false otherwise.
+   * NEVER throws — a failed refresh is normal (user not logged in).
+   */
+  initializeAuth(): Observable<boolean> {
+    return this.refresh().pipe(
+      map(() => true),
+      catchError(() => of(false)),
+    );
   }
 
   logout(): void {

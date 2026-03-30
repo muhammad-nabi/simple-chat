@@ -1,5 +1,6 @@
 using MediatR;
 using SimpleChat.Application.Common.Interfaces;
+using SimpleChat.Application.Identity.Constants;
 
 namespace SimpleChat.Application.Identity.Commands.Login;
 
@@ -51,7 +52,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
             userId, email, displayName, role);
 
         // Store refresh token session in Redis
-        await _sessionService.StoreSessionAsync(userId, refreshToken, TimeSpan.FromDays(7));
+        await _sessionService.StoreSessionAsync(userId, refreshToken, TimeSpan.FromDays(TokenConstants.RefreshTokenExpiryDays));
 
         return new LoginResponse(
             accessToken, refreshToken, userId, displayName, email, role.ToString());

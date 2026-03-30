@@ -8,6 +8,7 @@ public class RedisSessionService : ISessionService
     private readonly IConnectionMultiplexer _redis;
     private const string SessionPrefix = "session:";
     private const string UserSessionsPrefix = "user-sessions:";
+    private const string UsedTokenPrefix = "used-refresh:";
 
     public RedisSessionService(IConnectionMultiplexer redis)
     {
@@ -56,5 +57,18 @@ public class RedisSessionService : ISessionService
         }
 
         await db.KeyDeleteAsync(userSessionsKey);
+    }
+
+    public async Task MarkTokenAsUsedAsync(string refreshToken, string userId, TimeSpan expiry)
+    {
+        var db = _redis.GetDatabase();
+        await db.StringSetAsync(UsedTokenPrefix + refreshToken, userId, expiry);
+    }
+
+    public async Task<string?> GetUsedTokenUserIdAsync(string refreshToken)
+    {
+        var db = _redis.GetDatabase();
+        var value = await db.StringGetAsync(UsedTokenPrefix + refreshToken);
+        return value.HasValue ? value.ToString() : null;
     }
 }

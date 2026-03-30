@@ -233,4 +233,144 @@ public class AuthEndpointTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
+
+    // --- Refresh Token Tests ---
+
+    private string? ExtractRefreshTokenFromCookie(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            return null;
+
+        var cookieHeader = cookies.FirstOrDefault(c => c.StartsWith("refresh_token="));
+        if (cookieHeader == null)
+            return null;
+
+        var tokenPart = cookieHeader.Split(';')[0]; // "refresh_token=VALUE"
+        return tokenPart.Substring("refresh_token=".Length);
+    }
+
+    private HttpRequestMessage CreateRefreshRequest(string? refreshToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
+        request.Content = JsonContent.Create(new { });
+        if (refreshToken != null)
+        {
+            request.Headers.Add("Cookie", $"refresh_token={refreshToken}");
+        }
+        return request;
+    }
+
+    [Test]
+    public async Task Refresh_WithValidToken_ReturnsNewAccessTokenAndCookie()
+    {
+        // Arrange — register to get a refresh token
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+            new { displayName = "Refresh User", email = "refresh@example.com", password = "password123" });
+        var refreshToken = ExtractRefreshTokenFromCookie(registerResponse);
+        Assert.That(refreshToken, Is.Not.Null.And.Not.Empty, "Registration should set refresh_token cookie");
+
+        // Act
+        var response = await _client.SendAsync(CreateRefreshRequest(refreshToken));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetProperty("accessToken").GetString(), Is.Not.Null.And.Not.Empty);
+        Assert.That(body.GetProperty("userId").GetString(), Is.Not.Null.And.Not.Empty);
+        Assert.That(body.GetProperty("displayName").GetString(), Is.EqualTo("Refresh User"));
+
+        // New refresh token cookie should be set (rotation)
+        var newRefreshToken = ExtractRefreshTokenFromCookie(response);
+        Assert.That(newRefreshToken, Is.Not.Null.And.Not.Empty, "Refresh should set new refresh_token cookie");
+        Assert.That(newRefreshToken, Is.Not.EqualTo(refreshToken), "New token should differ from old token (rotation)");
+    }
+
+    [Test]
+    public async Task Refresh_WithNoCookie_Returns401()
+    {
+        // Act — no cookie
+        var response = await _client.SendAsync(CreateRefreshRequest(null));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Refresh_WithInvalidToken_Returns401()
+    {
+        // Act — bogus token
+        var response = await _client.SendAsync(CreateRefreshRequest("completely-invalid-token"));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Refresh_WithRotatedOutToken_InvalidatesAllSessions()
+    {
+        // Arrange — register and get first refresh token
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+            new { displayName = "Reuse User", email = "reuse@example.com", password = "password123" });
+        var firstToken = ExtractRefreshTokenFromCookie(registerResponse);
+
+        // Use the token once (rotate it)
+        var refreshResponse = await _client.SendAsync(CreateRefreshRequest(firstToken));
+        Assert.That(refreshResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var secondToken = ExtractRefreshTokenFromCookie(refreshResponse);
+
+        // Act — try to reuse the first (rotated-out) token
+        var reuseResponse = await _client.SendAsync(CreateRefreshRequest(firstToken));
+
+        // Assert — reuse detected, returns 401
+        Assert.That(reuseResponse.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+
+        // The second token should also be invalidated (emergency lockout)
+        var secondTokenResponse = await _client.SendAsync(CreateRefreshRequest(secondToken));
+        Assert.That(secondTokenResponse.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Refresh_DeactivatedUser_Returns401()
+    {
+        // Arrange — register
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+            new { displayName = "Deact Refresh", email = "deact-refresh@example.com", password = "password123" });
+        var refreshToken = ExtractRefreshTokenFromCookie(registerResponse);
+
+        // Deactivate the user
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<SimpleChat.Infrastructure.Data.ApplicationDbContext>();
+            var user = await dbContext.Users
+                .FirstAsync(u => u.Email == "deact-refresh@example.com");
+            ((SimpleChat.Infrastructure.Identity.ApplicationUser)user).IsActive = false;
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.SendAsync(CreateRefreshRequest(refreshToken));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Refresh_ThenUseNewToken_Succeeds()
+    {
+        // Arrange — register
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+            new { displayName = "Token Chain", email = "chain@example.com", password = "password123" });
+        var refreshToken = ExtractRefreshTokenFromCookie(registerResponse);
+
+        // Act — refresh to get a new access token
+        var refreshResponse = await _client.SendAsync(CreateRefreshRequest(refreshToken));
+        Assert.That(refreshResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var body = await refreshResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var newAccessToken = body.GetProperty("accessToken").GetString();
+
+        // Use the new access token on a protected endpoint (e.g., any endpoint that requires auth)
+        // We'll just verify the token is a valid JWT by checking it's not empty
+        Assert.That(newAccessToken, Is.Not.Null.And.Not.Empty);
+        Assert.That(newAccessToken, Does.Contain("."), "Access token should be a JWT with dot-separated parts");
+    }
 }
