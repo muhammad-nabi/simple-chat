@@ -55,7 +55,7 @@ development_status:
   epic-2: in-progress
   2-1-user-registration-with-first-user-admin-designation: done
   2-2-user-login-jwt-session: done
-  2-3-session-persistence-token-refresh: backlog
+  2-3-session-persistence-token-refresh: ready-for-dev
   2-4-logout-session-invalidation: backlog
   epic-2-retrospective: optional
 
