@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SimpleChat.Application.Identity.Commands.Login;
+using SimpleChat.Application.Identity.Commands.Logout;
 using SimpleChat.Application.Identity.Commands.RefreshToken;
 using SimpleChat.Application.Identity.Commands.Register;
 using SimpleChat.Application.Identity.Constants;
@@ -24,6 +25,10 @@ public class Auth : IEndpointGroup
 
         groupBuilder.MapPost(Refresh, "refresh")
             .AllowAnonymous()
+            .RequireRateLimiting("auth");
+
+        groupBuilder.MapPost(Logout, "logout")
+            .RequireAuthorization()
             .RequireRateLimiting("auth");
     }
 
@@ -92,6 +97,23 @@ public class Auth : IEndpointGroup
             ClearRefreshTokenCookie(httpContext);
             return TypedResults.StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
+    }
+
+    public static async Task<Ok> Logout(
+        ISender sender,
+        HttpContext httpContext)
+    {
+        var refreshToken = httpContext.Request.Cookies["refresh_token"];
+
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            var command = new LogoutCommand(refreshToken);
+            await sender.Send(command);
+        }
+
+        ClearRefreshTokenCookie(httpContext);
+
+        return TypedResults.Ok();
     }
 
     private static void SetRefreshTokenCookie(HttpContext httpContext, string refreshToken)

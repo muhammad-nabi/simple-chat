@@ -21,8 +21,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Only handle 401s for non-auth endpoints (avoid infinite loop on /api/auth/refresh)
-      if (error.status === 401 && !isAuthUrl) {
+      // Only handle 401s for non-auth endpoints; skip retry during logout
+      if (error.status === 401 && !isAuthUrl && !authService.isLoggingOut) {
         return authService.refresh().pipe(
           switchMap(response => {
             // Retry the original request with the new token

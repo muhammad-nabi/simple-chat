@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, tap, catchError, shareReplay, finalize, map } from 'rxjs';
 
 export interface RegisterRequest {
@@ -31,6 +32,7 @@ export interface CurrentUser {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
+  private router = inject(Router);
 
   private accessToken$ = new BehaviorSubject<string | null>(null);
   private user$ = new BehaviorSubject<CurrentUser | null>(null);
@@ -40,6 +42,9 @@ export class AuthService {
 
   /** Shared observable for in-flight refresh — prevents thundering herd */
   private refreshInFlight$: Observable<AuthResponse> | null = null;
+
+  /** Flag to prevent interceptor from retrying 401 during logout */
+  isLoggingOut = false;
 
   get accessToken(): string | null {
     return this.accessToken$.value;
@@ -103,12 +108,33 @@ export class AuthService {
   }
 
   logout(): void {
+    if (this.isLoggingOut) return;
+    this.isLoggingOut = true;
+    this.refreshInFlight$ = null;
+
+    // Best-effort server-side session invalidation
+    this.http
+      .post('/api/auth/logout', {}, { withCredentials: true })
+      .pipe(
+        catchError(() => of(null)),
+        finalize(() => {
+          this.isLoggingOut = false;
+        }),
+      )
+      .subscribe(() => {
+        this.clearSession();
+      });
+  }
+
+  private clearSession(): void {
     this.accessToken$.next(null);
     this.user$.next(null);
     this.isAuthenticated$.next(false);
+    this.router.navigate(['/login']);
   }
 
   private setSession(response: AuthResponse): void {
+    if (this.isLoggingOut) return;
     this.accessToken$.next(response.accessToken);
     this.user$.next({
       userId: response.userId,

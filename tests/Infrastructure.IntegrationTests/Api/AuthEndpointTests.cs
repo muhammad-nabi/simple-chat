@@ -373,4 +373,118 @@ public class AuthEndpointTests
         Assert.That(newAccessToken, Is.Not.Null.And.Not.Empty);
         Assert.That(newAccessToken, Does.Contain("."), "Access token should be a JWT with dot-separated parts");
     }
+
+    // --- Logout Tests ---
+
+    private HttpRequestMessage CreateLogoutRequest(string? accessToken, string? refreshToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+        request.Content = JsonContent.Create(new { });
+        if (accessToken != null)
+        {
+            request.Headers.Add("Authorization", $"Bearer {accessToken}");
+        }
+        if (refreshToken != null)
+        {
+            request.Headers.Add("Cookie", $"refresh_token={refreshToken}");
+        }
+        return request;
+    }
+
+    private async Task<(string accessToken, string refreshToken)> RegisterAndGetTokens(
+        string email, string password = "password123", string displayName = "Test User")
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new { displayName, email, password });
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var accessToken = body.GetProperty("accessToken").GetString()!;
+        var refreshToken = ExtractRefreshTokenFromCookie(response)!;
+        return (accessToken, refreshToken);
+    }
+
+    [Test]
+    public async Task Logout_WithValidAuthAndCookie_ReturnsOkAndClearsCookie()
+    {
+        // Arrange
+        var (accessToken, refreshToken) = await RegisterAndGetTokens("logout@example.com");
+
+        // Act
+        var response = await _client.SendAsync(CreateLogoutRequest(accessToken, refreshToken));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Refresh token cookie should be cleared
+        Assert.That(response.Headers.Contains("Set-Cookie"), Is.True);
+        var cookieHeader = response.Headers.GetValues("Set-Cookie").First();
+        Assert.That(cookieHeader, Does.Contain("refresh_token=;") & Does.Contain("expires="));
+    }
+
+    [Test]
+    public async Task Logout_WithoutAuthToken_Returns401()
+    {
+        // Arrange — register to get a refresh token but don't send access token
+        var (_, refreshToken) = await RegisterAndGetTokens("logout-noauth@example.com");
+
+        // Act — no Bearer token
+        var response = await _client.SendAsync(CreateLogoutRequest(null, refreshToken));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Logout_WithAuthButNoCookie_ReturnsOk()
+    {
+        // Arrange
+        var (accessToken, _) = await RegisterAndGetTokens("logout-nocookie@example.com");
+
+        // Act — auth token but no refresh cookie
+        var response = await _client.SendAsync(CreateLogoutRequest(accessToken, null));
+
+        // Assert — idempotent, returns 200
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    public async Task Logout_ThenRefreshWithSameToken_Returns401()
+    {
+        // Arrange
+        var (accessToken, refreshToken) = await RegisterAndGetTokens("logout-then-refresh@example.com");
+
+        // Act — logout
+        var logoutResponse = await _client.SendAsync(CreateLogoutRequest(accessToken, refreshToken));
+        Assert.That(logoutResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Try to refresh with the now-invalidated token
+        var refreshResponse = await _client.SendAsync(CreateRefreshRequest(refreshToken));
+
+        // Assert — session was invalidated, refresh should fail
+        Assert.That(refreshResponse.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    public async Task Logout_DeviceA_DeviceBSessionStillValid()
+    {
+        // Arrange — register (device A session)
+        var (accessTokenA, refreshTokenA) = await RegisterAndGetTokens("multi-device@example.com");
+
+        // Login again on "device B" to create a second session
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email = "multi-device@example.com", password = "password123" });
+        loginResponse.EnsureSuccessStatusCode();
+        var loginBody = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var refreshTokenB = ExtractRefreshTokenFromCookie(loginResponse)!;
+
+        // Act — logout device A
+        var logoutResponse = await _client.SendAsync(CreateLogoutRequest(accessTokenA, refreshTokenA));
+        Assert.That(logoutResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Assert — device B session should still be valid
+        var refreshBResponse = await _client.SendAsync(CreateRefreshRequest(refreshTokenB));
+        Assert.That(refreshBResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+            "Device B session should remain valid after Device A logout");
+    }
 }

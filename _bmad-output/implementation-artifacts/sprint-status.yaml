@@ -56,7 +56,7 @@ development_status:
   2-1-user-registration-with-first-user-admin-designation: done
   2-2-user-login-jwt-session: done
   2-3-session-persistence-token-refresh: done
-  2-4-logout-session-invalidation: backlog
+  2-4-logout-session-invalidation: done
   epic-2-retrospective: optional
 
   # Epic 3: Real-Time Private Messaging

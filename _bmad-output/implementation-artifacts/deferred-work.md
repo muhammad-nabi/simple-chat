@@ -75,3 +75,7 @@
 
 - `logout()` does not call server-side session invalidation — client-only state clearing leaves Redis session alive; Story 2.4 covers logout endpoint
 - Race condition (TOCTOU) in refresh token rotation — concurrent requests with same token can both succeed; sub-millisecond window, negligible for single-instance MVP. Fix with Redis WATCH/MULTI transaction or distributed lock when scaling to multi-instance.
+
+## Deferred from: code review of story-2-4 (2026-03-30)
+
+- No logging in `LogoutCommandHandler` when Redis fails — handler has no ILogger; if `InvalidateSessionAsync` throws, exception propagates as 500 with no application-level log. Consistent with existing pattern (LoginCommandHandler also lacks logging).
