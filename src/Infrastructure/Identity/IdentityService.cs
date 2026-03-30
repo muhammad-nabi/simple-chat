@@ -107,4 +107,42 @@ public class IdentityService : IIdentityService
 
         return result.ToApplicationResult();
     }
+
+    public async Task<(string UserId, string DisplayName, string Email, UserRole Role, bool IsActive)?>
+        FindUserByEmailAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null)
+        {
+            return null;
+        }
+
+        return (user.Id, user.DisplayName, user.Email!, user.Role, user.IsActive);
+    }
+
+    public async Task<bool> CheckPasswordAsync(string userId, string password)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        return await _userManager.CheckPasswordAsync(user, password);
+    }
+
+    // Pre-computed dummy bcrypt hash for timing-attack mitigation.
+    // This is a valid bcrypt hash (cost factor 11, matching BCrypt.Net default).
+    // The actual password is irrelevant — this exists solely to burn CPU time
+    // equivalent to a real password check, preventing user-enumeration via timing.
+    private static readonly string DummyBcryptHash =
+        BCrypt.Net.BCrypt.HashPassword("timing-attack-dummy");
+
+    public Task VerifyDummyPasswordAsync(string password)
+    {
+        BCrypt.Net.BCrypt.Verify(password, DummyBcryptHash);
+        return Task.CompletedTask;
+    }
 }

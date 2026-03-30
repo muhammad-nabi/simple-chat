@@ -1,5 +1,7 @@
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using SimpleChat.Infrastructure.Data;
 using SimpleChat.Web.HealthChecks;
 using Scalar.AspNetCore;
@@ -22,11 +24,74 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.WithProperty("MachineName", Environment.MachineName)
     .WriteTo.Console(new RenderedCompactJsonFormatter()));
 
+// JWT secret validation — warn if using default placeholder
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (jwtSecret == "CHANGE-THIS-IN-PRODUCTION-min-32-chars!!")
+{
+    Log.Warning("JWT secret is set to the default placeholder value. Change Jwt:Secret before deploying to production.");
+}
+
 // Add services to the container.
 builder.AddKeyVaultIfConfigured();
 builder.AddApplicationServices();
 builder.AddInfrastructureServices();
 builder.AddWebServices();
+
+// Rate limiting for auth endpoints
+var loginPerMinutePerIp = builder.Configuration.GetValue("RateLimit:LoginPerMinutePerIp", 20);
+var loginPerMinutePerUser = builder.Configuration.GetValue("RateLimit:LoginPerMinutePerUser", 5);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Per-IP rate limiting for all auth endpoints
+    options.AddPolicy("auth", httpContext =>
+    {
+        var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"ip:{remoteIp}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = loginPerMinutePerIp,
+                Window = TimeSpan.FromMinutes(1),
+            });
+    });
+
+    // Per-email rate limiting for login endpoint only (AC4: 5 attempts/min per username)
+    options.AddPolicy("auth-per-user", httpContext =>
+    {
+        var email = "unknown";
+
+        try
+        {
+            httpContext.Request.EnableBuffering();
+            httpContext.Request.Body.Position = 0;
+            using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
+            var body = reader.ReadToEndAsync().GetAwaiter().GetResult();
+            httpContext.Request.Body.Position = 0;
+
+            using var json = JsonDocument.Parse(body);
+            if (json.RootElement.TryGetProperty("email", out var emailProp))
+            {
+                email = emailProp.GetString()?.ToLowerInvariant() ?? "unknown";
+            }
+        }
+        catch
+        {
+            // If body parsing fails, fall back to "unknown" partition
+        }
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"user:{email}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = loginPerMinutePerUser,
+                Window = TimeSpan.FromMinutes(1),
+            });
+    });
+});
 
 var app = builder.Build();
 
@@ -82,12 +147,31 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors(static builder =>
-    builder.AllowAnyMethod()
-        .AllowAnyHeader()
-        .SetIsOriginAllowed(_ => true)
-        .AllowCredentials());
 
+// CORS — use configured origins in production, allow any in development
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+app.UseCors(corsBuilder =>
+{
+    corsBuilder.AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+
+    if (allowedOrigins is { Length: > 0 })
+    {
+        corsBuilder.WithOrigins(allowedOrigins);
+    }
+    else if (app.Environment.IsDevelopment())
+    {
+        corsBuilder.SetIsOriginAllowed(_ => true);
+    }
+    else
+    {
+        Log.Warning("No CORS origins configured (Cors:AllowedOrigins). Only same-origin requests will work.");
+        corsBuilder.WithOrigins("https://localhost");
+    }
+});
+
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

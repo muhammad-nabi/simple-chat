@@ -8,6 +8,11 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   userId: string;
@@ -40,6 +45,16 @@ export class AuthService {
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>('/api/auth/register', request, { withCredentials: true })
+      .pipe(
+        tap(response => {
+          this.setSession(response);
+        }),
+      );
+  }
+
+  login(request: LoginRequest): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>('/api/auth/login', request, { withCredentials: true })
       .pipe(
         tap(response => {
           this.setSession(response);

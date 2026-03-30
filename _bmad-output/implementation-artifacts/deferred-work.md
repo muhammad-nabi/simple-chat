@@ -64,3 +64,9 @@
 - JWT issuer/audience validation disabled — spec says single-instance app, skip validation; revisit if multi-instance deployment needed
 - No refresh endpoint — refresh token stored in HttpOnly cookie and Redis but no `/api/auth/refresh` endpoint exists; Story 2.3 covers this
 - BcryptPasswordHasher never returns `SuccessRehashNeeded` — no bcrypt work factor migration needed for MVP; revisit if work factor is increased
+
+## Deferred from: code review of story-2-2 (2026-03-30)
+
+- Client logout doesn't invalidate server session or clear HttpOnly cookie — AuthService.logout() only clears in-memory state; Redis session and refresh token cookie persist for up to 7 days. Story 2.4 covers logout endpoint.
+- ResetDatabaseAsync hardcoded SQL (`DELETE FROM [AspNetUserRoles]; DELETE FROM [AspNetUsers]`) will break with FK violations when domain tables referencing Users are added (e.g., ChatMessages in Epic 3). Update when domain entities are created.
+- Refresh token expiry (7 days) hardcoded independently in 4 locations (LoginCommandHandler, RegisterCommandHandler, SetRefreshTokenCookie x2) with no shared constant or config value — risk of silent drift if one is changed without updating others.

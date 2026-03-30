@@ -1,6 +1,6 @@
-<div class="register-container">
-  <div class="register-card">
-    <h1>Create your account</h1>
+<div class="login-container">
+  <div class="login-card">
+    <h1>Sign in to your account</h1>
 
     @if (serverError) {
       <div class="server-error" role="alert">
@@ -9,23 +9,6 @@
     }
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="form-field">
-        <label for="displayName">Display Name</label>
-        <input
-          id="displayName"
-          type="text"
-          formControlName="displayName"
-          placeholder="e.g. Jane Smith"
-          [attr.aria-describedby]="displayName.touched && displayName.errors ? 'displayName-error' : null"
-          [class.error]="displayName.touched && displayName.errors"
-        />
-        @if (displayName.touched && displayName.errors) {
-          <span id="displayName-error" class="field-error" role="alert">
-            {{ getErrorMessage('displayName') }}
-          </span>
-        }
-      </div>
-
       <div class="form-field">
         <label for="email">Email</label>
         <input
@@ -67,15 +50,15 @@
       >
         @if (isSubmitting) {
           <span class="spinner"></span>
-          Creating account...
+          Signing in...
         } @else {
-          Register
+          Sign in
         }
       </button>
     </form>
 
     <p class="auth-link">
-      Already have an account? <a routerLink="/login">Sign in</a>
+      Don't have an account? <a routerLink="/register">Register</a>
     </p>
   </div>
 </div>

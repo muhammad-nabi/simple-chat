@@ -29,11 +29,14 @@ public class ProblemDetailsExceptionHandler : IExceptionHandler
                 Title = "The specified resource was not found.",
                 Detail = ne.Message
             }),
-            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, new ProblemDetails
+            UnauthorizedAccessException ue => (StatusCodes.Status401Unauthorized, new ProblemDetails
             {
                 Status = StatusCodes.Status401Unauthorized,
                 Title = "Unauthorized",
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2"
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+                Detail = string.IsNullOrEmpty(ue.Message) || ue.Message == new UnauthorizedAccessException().Message
+                    ? null
+                    : ue.Message
             }),
             ForbiddenAccessException => (StatusCodes.Status403Forbidden, new ProblemDetails
             {

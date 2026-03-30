@@ -51,4 +51,24 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.MigrateAsync();
     }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.MigrateAsync();
+
+        // Clean all user data for test isolation
+        await context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM [AspNetUserRoles]; DELETE FROM [AspNetUsers];");
+
+        // Clear Redis session data
+        var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
+        var db = redis.GetDatabase();
+        var server = redis.GetServer(redis.GetEndPoints().First());
+        await foreach (var key in server.KeysAsync(pattern: "session:*"))
+            await db.KeyDeleteAsync(key);
+        await foreach (var key in server.KeysAsync(pattern: "user-sessions:*"))
+            await db.KeyDeleteAsync(key);
+    }
 }

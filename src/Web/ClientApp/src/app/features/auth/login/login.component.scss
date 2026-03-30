@@ -6,7 +6,7 @@ $color-surface: #F0F2F5;
 $color-border: #D1D5DB;
 $font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-.register-container {
+.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -16,7 +16,7 @@ $font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-family: $font-family;
 }
 
-.register-card {
+.login-card {
   background: white;
   border-radius: 12px;
   padding: 32px;

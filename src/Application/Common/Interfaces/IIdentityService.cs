@@ -21,4 +21,11 @@ public interface IIdentityService
     Task<bool> AnyUsersExistAsync();
 
     Task<Result> DeleteUserAsync(string userId);
+
+    Task<(string UserId, string DisplayName, string Email, UserRole Role, bool IsActive)?>
+        FindUserByEmailAsync(string email);
+
+    Task<bool> CheckPasswordAsync(string userId, string password);
+
+    Task VerifyDummyPasswordAsync(string password);
 }

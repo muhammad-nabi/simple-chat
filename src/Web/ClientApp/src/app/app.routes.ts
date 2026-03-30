@@ -15,7 +15,8 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    redirectTo: 'register',
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then(m => m.LoginComponent),
   },
   {
     path: '**',
