@@ -52,12 +52,12 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: User Authentication & Account Management
-  epic-2: in-progress
+  epic-2: done
   2-1-user-registration-with-first-user-admin-designation: done
   2-2-user-login-jwt-session: done
   2-3-session-persistence-token-refresh: done
   2-4-logout-session-invalidation: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Real-Time Private Messaging
   epic-3: backlog
