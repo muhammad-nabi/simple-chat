@@ -79,3 +79,7 @@
 ## Deferred from: code review of story-2-4 (2026-03-30)
 
 - No logging in `LogoutCommandHandler` when Redis fails — handler has no ILogger; if `InvalidateSessionAsync` throws, exception propagates as 500 with no application-level log. Consistent with existing pattern (LoginCommandHandler also lacks logging).
+
+## Deferred from: review of prep-fix-test-infrastructure (2026-03-31)
+
+- `ResetDatabaseAsync` dynamic SQL: if DELETE phase throws, NOCHECK CONSTRAINT ALL remains disabled for remainder of test session — FK enforcement silently off for subsequent tests. Low practical risk (DELETE on empty Identity tables won't fail), but no transaction/error-handling wrapper exists. Consider wrapping in TRY/CATCH/ROLLBACK if test suite grows complex.

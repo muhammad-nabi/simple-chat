@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,16 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // Add Redis with Testcontainers Redis
             services.AddSingleton<IConnectionMultiplexer>(
                 ConnectionMultiplexer.Connect(TestcontainersFixture.RedisConnectionString));
+
+            // Relax password rules for test environment
+            services.Configure<IdentityOptions>(opts =>
+            {
+                opts.Password.RequireDigit = false;
+                opts.Password.RequireUppercase = false;
+                opts.Password.RequireLowercase = false;
+                opts.Password.RequireNonAlphanumeric = false;
+                opts.Password.RequiredLength = 6;
+            });
         });
 
         builder.UseEnvironment("Development");
@@ -58,9 +69,24 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.MigrateAsync();
 
-        // Clean all user data for test isolation
-        await context.Database.ExecuteSqlRawAsync(
-            "DELETE FROM [AspNetUserRoles]; DELETE FROM [AspNetUsers];");
+        // Dynamically clear all tables (except migration history) regardless of schema
+        await context.Database.ExecuteSqlRawAsync("""
+            DECLARE @sql NVARCHAR(MAX) = N'';
+            SELECT @sql += 'ALTER TABLE ' + QUOTENAME(s.name) + '.' + QUOTENAME(t.name) + ' NOCHECK CONSTRAINT ALL;'
+            FROM sys.tables t INNER JOIN sys.schemas s ON t.schema_id = s.schema_id;
+            EXEC sp_executesql @sql;
+
+            SET @sql = N'';
+            SELECT @sql += 'DELETE FROM ' + QUOTENAME(s.name) + '.' + QUOTENAME(t.name) + ';'
+            FROM sys.tables t INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+            WHERE t.name <> '__EFMigrationsHistory';
+            EXEC sp_executesql @sql;
+
+            SET @sql = N'';
+            SELECT @sql += 'ALTER TABLE ' + QUOTENAME(s.name) + '.' + QUOTENAME(t.name) + ' WITH CHECK CHECK CONSTRAINT ALL;'
+            FROM sys.tables t INNER JOIN sys.schemas s ON t.schema_id = s.schema_id;
+            EXEC sp_executesql @sql;
+            """);
 
         // Clear Redis session data
         var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
