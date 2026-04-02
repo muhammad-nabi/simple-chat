@@ -94,6 +94,11 @@
 - Inconsistent CancellationToken on pre-existing IIdentityService methods — new methods (GetDisplayNamesByIdsAsync, UserExistsAsync) accept CancellationToken but older methods (FindUserByIdAsync, CheckPasswordAsync, etc.) do not. Standardize when touching these methods next.
 - Race condition in CreateConversation — check-then-create for private conversations has no DB-level uniqueness constraint. Sub-millisecond window on single-instance MVP. Proper fix: unique composite index on private conversation user pairs; add during Epic 4 (group conversations) or dedicated hardening pass.
 
+## Deferred from: code review of story-3.4 (2026-04-02)
+
+- `100vh` causes layout overflow on mobile browsers (iOS Safari, Chrome Android) — address bar overlap hides bottom content. Modern fix: `100dvh`. Address during Epic 9 responsive polish (Story 9.4).
+- Desktop-to-mobile resize loses view context — user viewing chat on desktop gets sent to conversation list when resizing to mobile because `activePanel` defaults to `'list'`. UX refinement for responsive polish.
+
 ## Deferred from: code review of story-3.3 (2026-04-02)
 
 - No message-gap fill or conversation-list refresh on reconnect (AC4) — explicitly deferred per Task 5.3 to Stories 3.4-3.7 when MessageService and conversation state management are built

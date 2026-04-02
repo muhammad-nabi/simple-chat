@@ -9,6 +9,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'chat',
+    loadChildren: () =>
+      import('./features/chat/chat.routes').then(m => m.chatRoutes),
+    canActivate: [authGuard],
+  },
+  {
     path: 'register',
     loadComponent: () =>
       import('./features/auth/register/register.component').then(m => m.RegisterComponent),

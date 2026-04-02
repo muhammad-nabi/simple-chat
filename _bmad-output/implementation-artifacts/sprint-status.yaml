@@ -64,7 +64,7 @@ development_status:
   3-1-conversation-message-data-model: done
   3-2-send-persist-messages-backend: done
   3-3-signalr-real-time-messaging-hub: done
-  3-4-design-token-system-chat-layout-shell: backlog
+  3-4-design-token-system-chat-layout-shell: done
   3-5-conversation-list-navigation: backlog
   3-6-chat-window-message-display: backlog
   3-7-message-input-optimistic-send: backlog
