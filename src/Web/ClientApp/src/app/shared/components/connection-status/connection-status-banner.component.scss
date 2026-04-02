@@ -1,0 +1,19 @@
+@use 'styles/tokens' as *;
+
+.connection-banner {
+  width: 100%;
+  padding: $space-sm $space-lg;
+  font-size: $font-size-body-sm;
+  font-weight: $font-weight-medium;
+  text-align: center;
+}
+
+.reconnecting {
+  background-color: $color-warning;
+  color: $color-text-primary;
+}
+
+.disconnected {
+  background-color: $color-error;
+  color: $color-text-inverse;
+}

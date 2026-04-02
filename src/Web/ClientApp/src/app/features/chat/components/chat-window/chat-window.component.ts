@@ -6,6 +6,7 @@ import { MessageBubbleComponent } from '../message-bubble/message-bubble.compone
 import { MessageService } from '../../services/message.service';
 import { ConversationService } from '../../services/conversation.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { SignalRService } from '../../../../core/signalr/signalr.service';
 import { Message } from '../../models/message.model';
 import { Conversation } from '../../models/conversation.model';
 
@@ -20,6 +21,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   private readonly messageService = inject(MessageService);
   private readonly conversationService = inject(ConversationService);
   private readonly authService = inject(AuthService);
+  private readonly signalRService = inject(SignalRService);
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
@@ -100,7 +102,14 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       }
     });
 
-    this.subscriptions.push(userSub, msgSub, loadingSub, loadingHistorySub, hasMoreSub, convSub);
+    const reconnectSub = this.signalRService.reconnected.subscribe(() => {
+      if (this.selectedConversation) {
+        this.messageService.loadMessages(this.selectedConversation.id);
+        this.shouldScrollToBottom = true;
+      }
+    });
+
+    this.subscriptions.push(userSub, msgSub, loadingSub, loadingHistorySub, hasMoreSub, convSub, reconnectSub);
   }
 
   ngAfterViewChecked(): void {

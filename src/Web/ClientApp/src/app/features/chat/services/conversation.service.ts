@@ -38,9 +38,13 @@ export class ConversationService {
     const userSub = this.authService.currentUser$.subscribe(
       (user) => this.currentUserId = user?.userId ?? null
     );
+    const reconnectSub = this.signalRService.reconnected.subscribe(() => {
+      this.loadConversations();
+    });
     this.destroyRef.onDestroy(() => {
       msgSub.unsubscribe();
       userSub.unsubscribe();
+      reconnectSub.unsubscribe();
     });
   }
 

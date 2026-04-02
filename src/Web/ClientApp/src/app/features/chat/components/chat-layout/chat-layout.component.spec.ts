@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { ChatLayoutComponent } from './chat-layout.component';
 import { ConversationService } from '../../services/conversation.service';
+import { SignalRService } from '../../../../core/signalr/signalr.service';
 import type { Conversation } from '../../models/conversation.model';
 
 describe('ChatLayoutComponent', () => {
@@ -37,10 +38,21 @@ describe('ChatLayoutComponent', () => {
       getDisplayName: jest.fn().mockReturnValue('Test Conversation'),
     };
 
+    const mockSignalRService = {
+      connectionState: new BehaviorSubject('Connected').asObservable(),
+      messageReceived: new Subject().asObservable(),
+      reconnected: new Subject().asObservable(),
+      sendMessage: jest.fn(),
+      joinConversation: jest.fn(),
+      start: jest.fn(),
+      stop: jest.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ChatLayoutComponent],
       providers: [
         { provide: ConversationService, useValue: mockConversationService },
+        { provide: SignalRService, useValue: mockSignalRService },
       ],
     }).compileComponents();
 

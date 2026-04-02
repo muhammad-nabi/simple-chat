@@ -18,6 +18,7 @@
   <!-- Chat area -->
   @if (showChatArea) {
     <section class="chat-area" role="main" aria-label="Chat messages">
+      <app-connection-status-banner />
       <div class="chat-header">
         @if (isMobile) {
           <button class="back-button"

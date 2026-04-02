@@ -12,6 +12,7 @@ describe('ConversationService', () => {
   let service: ConversationService;
   let httpMock: HttpTestingController;
   let messageSubject: Subject<MessagePayload>;
+  let reconnectedSubject: Subject<void>;
 
   const mockConversations: Conversation[] = [
     {
@@ -36,9 +37,11 @@ describe('ConversationService', () => {
 
   beforeEach(() => {
     messageSubject = new Subject<MessagePayload>();
+    reconnectedSubject = new Subject<void>();
 
     const mockSignalR = {
       messageReceived: messageSubject.asObservable(),
+      reconnected: reconnectedSubject.asObservable(),
       joinConversation: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -169,6 +172,20 @@ describe('ConversationService', () => {
 
     const conv1 = result.find(c => c.id === 1);
     expect(conv1?.unreadCount).toBe(3); // Was 2, now 3
+  });
+
+  describe('reconnection', () => {
+    it('should reload conversations on reconnect', () => {
+      let result: Conversation[] = [];
+      service.conversations.subscribe(c => result = c);
+
+      reconnectedSubject.next();
+      const req = httpMock.expectOne('/api/conversations');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockConversations);
+
+      expect(result.length).toBe(2);
+    });
   });
 
   describe('createConversation', () => {

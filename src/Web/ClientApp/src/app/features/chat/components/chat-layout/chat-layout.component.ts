@@ -4,6 +4,7 @@ import { ConversationListComponent } from '../conversation-list/conversation-lis
 import { ChatWindowComponent } from '../chat-window/chat-window.component';
 import { OnlineUsersComponent } from '../online-users/online-users.component';
 import { MessageInputComponent } from '../message-input/message-input.component';
+import { ConnectionStatusBannerComponent } from '../../../../shared/components/connection-status/connection-status-banner.component';
 import { ConversationService } from '../../services/conversation.service';
 import { Conversation } from '../../models/conversation.model';
 
@@ -13,7 +14,7 @@ export type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [AsyncPipe, ConversationListComponent, ChatWindowComponent, OnlineUsersComponent, MessageInputComponent],
+  imports: [AsyncPipe, ConversationListComponent, ChatWindowComponent, OnlineUsersComponent, MessageInputComponent, ConnectionStatusBannerComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss',
 })

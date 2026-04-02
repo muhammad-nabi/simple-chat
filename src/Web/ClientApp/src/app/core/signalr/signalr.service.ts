@@ -14,9 +14,11 @@ export class SignalRService {
   private connection: signalR.HubConnection | null = null;
   private readonly connectionState$ = new BehaviorSubject<ConnectionState>('Disconnected');
   private readonly messageReceived$ = new Subject<MessagePayload>();
+  private readonly reconnected$ = new Subject<void>();
 
   readonly connectionState: Observable<ConnectionState> = this.connectionState$.asObservable();
   readonly messageReceived: Observable<MessagePayload> = this.messageReceived$.asObservable();
+  readonly reconnected: Observable<void> = this.reconnected$.asObservable();
 
   constructor() {
     // Auto-start/stop based on auth state changes
@@ -111,6 +113,7 @@ export class SignalRService {
 
     this.connection.onreconnected(() => {
       this.connectionState$.next('Connected');
+      this.reconnected$.next();
     });
 
     this.connection.onclose(() => {

@@ -123,3 +123,7 @@
 
 - Reload `GET /api/conversations` after conversation create can overwrite newer state pushed by SignalR [conversation.service.ts:82-97] — same pattern as pre-existing `loadConversations()` race condition deferred in story 3.5; fix both together with merge-based state update or `switchMap`
 - `DisplayName` nullable from DB could cause frontend `.toLowerCase()` crash in filter [IdentityService.cs:186] — pre-existing data integrity concern; coalesce to `UserName` or `Id` in the EF projection
+
+## Deferred from: code review of story-3.9 (2026-04-02)
+
+- `loadConversations()` has no in-flight request cancellation [conversation.service.ts:51-64] — unlike MessageService.loadMessages() which cancels prior requests, loadConversations() creates overlapping HTTP subscriptions on rapid reconnects; pre-existing pattern (see also story 3.5 deferred item)

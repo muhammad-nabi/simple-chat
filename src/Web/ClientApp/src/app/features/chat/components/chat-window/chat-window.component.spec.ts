@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { ChatWindowComponent } from './chat-window.component';
 import { MessageService } from '../../services/message.service';
 import { ConversationService } from '../../services/conversation.service';
 import { AuthService, CurrentUser } from '../../../../core/services/auth.service';
+import { SignalRService } from '../../../../core/signalr/signalr.service';
 import { Message } from '../../models/message.model';
 import { Conversation } from '../../models/conversation.model';
 
@@ -15,6 +16,7 @@ describe('ChatWindowComponent', () => {
   let hasMoreSubject: BehaviorSubject<boolean>;
   let selectedConvSubject: BehaviorSubject<Conversation | null>;
   let mockMessageService: Record<string, unknown>;
+  let reconnectedSubject: Subject<void>;
 
   const mockConversation: Conversation = {
     id: 1,
@@ -37,6 +39,7 @@ describe('ChatWindowComponent', () => {
     loadingSubject = new BehaviorSubject<boolean>(false);
     hasMoreSubject = new BehaviorSubject<boolean>(false);
     selectedConvSubject = new BehaviorSubject<Conversation | null>(null);
+    reconnectedSubject = new Subject<void>();
 
     mockMessageService = {
       messages$: messagesSubject.asObservable(),
@@ -65,12 +68,19 @@ describe('ChatWindowComponent', () => {
       }),
     };
 
+    const mockSignalRService = {
+      connectionState: new BehaviorSubject('Connected').asObservable(),
+      reconnected: reconnectedSubject.asObservable(),
+      messageReceived: new Subject().asObservable(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ChatWindowComponent],
       providers: [
         { provide: MessageService, useValue: mockMessageService },
         { provide: ConversationService, useValue: mockConversationService },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: SignalRService, useValue: mockSignalRService },
       ],
     }).compileComponents();
 
@@ -241,6 +251,28 @@ describe('ChatWindowComponent', () => {
     const emptyState = fixture.nativeElement.querySelector('.empty-state-messages');
     expect(emptyState).toBeTruthy();
     expect(emptyState.textContent).toContain('No messages yet');
+  });
+
+  describe('reconnection', () => {
+    it('should reload messages on reconnect when conversation is active', () => {
+      selectedConvSubject.next(mockConversation);
+      fixture.detectChanges();
+      (mockMessageService['loadMessages'] as jest.Mock).mockClear();
+
+      reconnectedSubject.next();
+
+      expect(mockMessageService['loadMessages']).toHaveBeenCalledWith(1);
+    });
+
+    it('should not reload messages on reconnect when no conversation selected', () => {
+      selectedConvSubject.next(null);
+      fixture.detectChanges();
+      (mockMessageService['loadMessages'] as jest.Mock).mockClear();
+
+      reconnectedSubject.next();
+
+      expect(mockMessageService['loadMessages']).not.toHaveBeenCalled();
+    });
   });
 
   it('should not show empty messages state when loading', () => {
