@@ -80,6 +80,11 @@
 
 - No logging in `LogoutCommandHandler` when Redis fails — handler has no ILogger; if `InvalidateSessionAsync` throws, exception propagates as 500 with no application-level log. Consistent with existing pattern (LoginCommandHandler also lacks logging).
 
+## Deferred from: code review of story-3-1 (2026-04-02)
+
+- `ConversationParticipant.LastReadMessageId` can reference a `Message.Id` from a different conversation — no FK constraint or application-level guard exists; future unread-tracking implementation (Epic 5) must validate that `LastReadMessageId` belongs to the same `ConversationId`
+- Content/FileId cross-field invariants not enforced at data layer — a `Text` message can have empty content, a `File` message can have null `FileId`; Story 3.2 command handlers must enforce `MessageType`-specific validation rules
+
 ## Deferred from: review of prep-fix-test-infrastructure (2026-03-31)
 
 - `ResetDatabaseAsync` dynamic SQL: if DELETE phase throws, NOCHECK CONSTRAINT ALL remains disabled for remainder of test session — FK enforcement silently off for subsequent tests. Low practical risk (DELETE on empty Identity tables won't fail), but no transaction/error-handling wrapper exists. Consider wrapping in TRY/CATCH/ROLLBACK if test suite grows complex.
