@@ -93,3 +93,7 @@
 
 - Inconsistent CancellationToken on pre-existing IIdentityService methods — new methods (GetDisplayNamesByIdsAsync, UserExistsAsync) accept CancellationToken but older methods (FindUserByIdAsync, CheckPasswordAsync, etc.) do not. Standardize when touching these methods next.
 - Race condition in CreateConversation — check-then-create for private conversations has no DB-level uniqueness constraint. Sub-millisecond window on single-instance MVP. Proper fix: unique composite index on private conversation user pairs; add during Epic 4 (group conversations) or dedicated hardening pass.
+
+## Deferred from: code review of story-3.3 (2026-04-02)
+
+- No message-gap fill or conversation-list refresh on reconnect (AC4) — explicitly deferred per Task 5.3 to Stories 3.4-3.7 when MessageService and conversation state management are built

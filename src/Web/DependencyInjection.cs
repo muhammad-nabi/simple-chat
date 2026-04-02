@@ -4,6 +4,7 @@ using SimpleChat.Infrastructure.Data;
 using SimpleChat.Web.HealthChecks;
 using SimpleChat.Web.Services;
 using Microsoft.AspNetCore.Mvc;
+using SimpleChat.Web.Hubs;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +31,9 @@ public static class DependencyInjection
             options.AddOperationTransformer<ApiExceptionOperationTransformer>();
             options.AddOperationTransformer<IdentityApiOperationTransformer>();
         });
+
+        builder.Services.AddSignalR();
+        builder.Services.AddScoped<IMessageBroadcaster, SignalRMessageBroadcaster>();
 
         builder.Services.AddCors();
 

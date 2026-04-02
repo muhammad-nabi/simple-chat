@@ -58,6 +58,22 @@ public static class DependencyInjection
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(1),
                 };
+
+                // SignalR sends JWT as query string parameter since WebSockets
+                // cannot send custom HTTP headers after the initial handshake
+                options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        string? accessToken = context.Request.Query["access_token"];
+                        Microsoft.AspNetCore.Http.PathString path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         builder.Services.AddAuthorizationBuilder();
