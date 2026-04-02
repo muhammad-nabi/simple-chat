@@ -1,0 +1,154 @@
+@use 'styles/tokens' as t;
+@use 'styles/mixins' as m;
+
+:host {
+  display: block;
+  height: 100vh;
+  min-width: 320px;
+  overflow: hidden;
+}
+
+.chat-layout {
+  display: grid;
+  height: 100%;
+  transition: grid-template-columns t.$transition-normal;
+
+  @include m.reduced-motion {
+    transition: none;
+  }
+
+  // Desktop: 3-panel
+  &.layout-desktop {
+    grid-template-columns: 320px 1fr;
+
+    &.members-visible {
+      grid-template-columns: 320px 1fr 240px;
+    }
+  }
+
+  // Tablet: 2-panel
+  &.layout-tablet {
+    grid-template-columns: 280px 1fr;
+
+    &.sidebar-collapsed {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Mobile: single panel
+  &.layout-mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Sidebar
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background-color: t.$color-background;
+  border-right: 1px solid t.$color-divider;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 0 t.$space-lg;
+  height: 56px;
+  border-bottom: 1px solid t.$color-divider;
+  flex-shrink: 0;
+
+  h2 {
+    font-size: t.$font-size-heading;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-text-primary;
+    margin: 0;
+  }
+}
+
+// Chat area
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  background-color: t.$color-chat-bg;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: t.$space-sm;
+  padding: 0 t.$space-lg;
+  height: 56px;
+  background-color: t.$color-background;
+  border-bottom: 1px solid t.$color-divider;
+  flex-shrink: 0;
+}
+
+.chat-title {
+  flex: 1;
+  font-size: t.$font-size-body-lg;
+  font-weight: t.$font-weight-medium;
+  color: t.$color-text-primary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back-button,
+.toggle-sidebar-button,
+.toggle-members-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: t.$radius-md;
+  background: transparent;
+  color: t.$color-text-primary;
+  cursor: pointer;
+  font-size: t.$font-size-heading;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: t.$color-surface;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.toggle-members-button {
+  margin-left: auto;
+}
+
+// Members panel
+.members-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: t.$color-background;
+  border-left: 1px solid t.$color-divider;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.members-header {
+  display: flex;
+  align-items: center;
+  padding: 0 t.$space-lg;
+  height: 56px;
+  border-bottom: 1px solid t.$color-divider;
+  flex-shrink: 0;
+
+  h3 {
+    font-size: t.$font-size-body-lg;
+    font-weight: t.$font-weight-medium;
+    color: t.$color-text-primary;
+    margin: 0;
+  }
+}

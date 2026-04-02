@@ -1,0 +1,53 @@
+<div class="message-input-container">
+  @if (showDraftIndicator) {
+    <div class="draft-indicator"
+         role="region"
+         aria-live="polite">
+      Draft
+    </div>
+  }
+
+  <div class="input-row">
+    <button class="attach-button"
+            type="button"
+            disabled
+            aria-label="Attach file (coming soon)">
+      &#128206;
+    </button>
+
+    <textarea #messageTextarea
+              class="message-textarea"
+              [(ngModel)]="messageText"
+              (keydown)="onKeydown($event)"
+              (input)="onInput()"
+              [attr.aria-label]="'Type a message'"
+              placeholder="Type a message"
+              rows="1"
+              [class.error-state]="isOverLimit"></textarea>
+
+    <button class="send-button"
+            type="button"
+            (click)="send()"
+            [disabled]="!canSend"
+            aria-label="Send message">
+      &#10148;
+    </button>
+  </div>
+
+  @if (isOverLimit) {
+    <div class="char-error">
+      Message exceeds 4000 character limit
+    </div>
+  }
+
+  @if (sendError) {
+    <div class="send-error"
+         role="alert"
+         aria-live="assertive"
+         (click)="retry()"
+         (keydown.enter)="retry()"
+         tabindex="0">
+      {{ sendError }}
+    </div>
+  }
+</div>

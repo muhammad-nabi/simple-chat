@@ -1,0 +1,63 @@
+<div class="chat-layout"
+     [class.layout-desktop]="isDesktop"
+     [class.layout-tablet]="isTablet"
+     [class.layout-mobile]="isMobile"
+     [class.sidebar-collapsed]="sidebarCollapsed"
+     [class.members-visible]="showMembers">
+
+  <!-- Sidebar: conversation list -->
+  @if (showSidebar) {
+    <aside class="sidebar" role="navigation" aria-label="Conversations">
+      <div class="sidebar-header">
+        <h2>Chats</h2>
+      </div>
+      <app-conversation-list (conversationSelected)="onConversationSelected($event)" />
+    </aside>
+  }
+
+  <!-- Chat area -->
+  @if (showChatArea) {
+    <section class="chat-area" role="main" aria-label="Chat messages">
+      <app-connection-status-banner />
+      <div class="chat-header">
+        @if (isMobile) {
+          <button class="back-button"
+                  (click)="navigateBack()"
+                  aria-label="Back to conversations">
+            &#8592;
+          </button>
+        }
+        @if (isTablet) {
+          <button class="toggle-sidebar-button"
+                  (click)="toggleSidebar()"
+                  aria-label="Toggle sidebar">
+            &#9776;
+          </button>
+        }
+        <span class="chat-title">{{ getConversationTitle((selectedConversation$ | async) ?? null) }}</span>
+        @if (!isTablet) {
+          <button class="toggle-members-button"
+                  (click)="toggleMembers()"
+                  [attr.aria-label]="showMembers ? 'Hide members' : 'Show members'"
+                  [attr.aria-expanded]="showMembers">
+            &#128101;
+          </button>
+        }
+      </div>
+      <app-chat-window />
+      @if ((selectedConversation$ | async) !== null) {
+        <app-message-input [layoutMode]="layoutMode" />
+      }
+    </section>
+  }
+
+  <!-- Members panel -->
+  @if (showMembers) {
+    <aside class="members-panel" aria-label="Online members">
+      <div class="members-header">
+        <h3>Members</h3>
+      </div>
+      <app-online-users />
+    </aside>
+  }
+</div>

@@ -38,6 +38,13 @@ $font-size-heading: 18px;
 $font-weight-normal: 400;
 $font-weight-medium: 500;
 $font-weight-bold: 600;
+$line-height-tight: 1.0;
+$line-height-snug: 1.2;
+$line-height-normal: 1.4;
+$line-height-relaxed: 1.47;
+
+// Avatar deterministic colors (8 warm palette, indexed by user ID % 8)
+$avatar-colors: #E57373, #F06292, #BA68C8, #7986CB, #4FC3F7, #4DB6AC, #FFD54F, #FF8A65;
 
 // Spacing — 4px base unit
 $space-xs: 4px;

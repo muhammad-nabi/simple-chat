@@ -79,3 +79,51 @@
 ## Deferred from: code review of story-2-4 (2026-03-30)
 
 - No logging in `LogoutCommandHandler` when Redis fails — handler has no ILogger; if `InvalidateSessionAsync` throws, exception propagates as 500 with no application-level log. Consistent with existing pattern (LoginCommandHandler also lacks logging).
+
+## Deferred from: code review of story-3-1 (2026-04-02)
+
+- `ConversationParticipant.LastReadMessageId` can reference a `Message.Id` from a different conversation — no FK constraint or application-level guard exists; future unread-tracking implementation (Epic 5) must validate that `LastReadMessageId` belongs to the same `ConversationId`
+- Content/FileId cross-field invariants not enforced at data layer — a `Text` message can have empty content, a `File` message can have null `FileId`; Story 3.2 command handlers must enforce `MessageType`-specific validation rules
+
+## Deferred from: review of prep-fix-test-infrastructure (2026-03-31)
+
+- `ResetDatabaseAsync` dynamic SQL: if DELETE phase throws, NOCHECK CONSTRAINT ALL remains disabled for remainder of test session — FK enforcement silently off for subsequent tests. Low practical risk (DELETE on empty Identity tables won't fail), but no transaction/error-handling wrapper exists. Consider wrapping in TRY/CATCH/ROLLBACK if test suite grows complex.
+
+## Deferred from: code review of story-3-2 (2026-04-02)
+
+- Inconsistent CancellationToken on pre-existing IIdentityService methods — new methods (GetDisplayNamesByIdsAsync, UserExistsAsync) accept CancellationToken but older methods (FindUserByIdAsync, CheckPasswordAsync, etc.) do not. Standardize when touching these methods next.
+- Race condition in CreateConversation — check-then-create for private conversations has no DB-level uniqueness constraint. Sub-millisecond window on single-instance MVP. Proper fix: unique composite index on private conversation user pairs; add during Epic 4 (group conversations) or dedicated hardening pass.
+
+## Deferred from: code review of story-3.4 (2026-04-02)
+
+- `100vh` causes layout overflow on mobile browsers (iOS Safari, Chrome Android) — address bar overlap hides bottom content. Modern fix: `100dvh`. Address during Epic 9 responsive polish (Story 9.4).
+- Desktop-to-mobile resize loses view context — user viewing chat on desktop gets sent to conversation list when resizing to mobile because `activePanel` defaults to `'list'`. UX refinement for responsive polish.
+
+## Deferred from: code review of story-3.3 (2026-04-02)
+
+- No message-gap fill or conversation-list refresh on reconnect (AC4) — explicitly deferred per Task 5.3 to Stories 3.4-3.7 when MessageService and conversation state management are built
+
+## Deferred from: code review of story-3.5 (2026-04-02)
+
+- `loadConversations()` has no concurrent call guard — multiple rapid calls (e.g., multiple SignalR messages for unknown conversations) fire parallel HTTP requests with no cancellation; race condition where older response overwrites newer. Minor at current scale.
+- No pagination on GetConversations endpoint — unbounded query loads all conversations, participants, and latest messages. Acceptable at current scale; add cursor/offset pagination when conversation counts grow.
+- Selected conversation object becomes stale after SignalR update — `_selectedConversation$` holds old reference while `_conversations$` gets updated copy. No current consumer of stale properties but will cause bugs when future code reads `selectedConversation$` for `unreadCount` or `lastMessagePreview`.
+- Unit tests (GetConversationsQueryHandlerTests) use NUnit `Assert.That` instead of Shouldly — follows existing test file patterns in this project; pre-existing convention inconsistency.
+
+## Deferred from: code review of story-3.6 (2026-04-02)
+
+- `aria-busy` absent during incremental history loading — loading spinner has `aria-label` but no `aria-busy` on the scroll container during pagination fetches; accessibility enhancement for screen reader users
+
+## Deferred from: code review of story-3.7 (2026-04-02)
+
+- senderDisplayName hardcoded to empty string in optimistic message [message.service.ts:136] — optimistic message uses `senderDisplayName: ''`; in private chats own messages don't show sender so invisible, but future group chats will show blank name. Server echo is suppressed by pendingMessageIds so it never gets corrected.
+- isFirstMessageInConversation doesn't check loaded history [message.service.ts:127-129] — method returns true for any conversation not yet in firstMessageSent map, even if history has prior messages from this user. Celebrate animation fires incorrectly. Needs broader fix: seed from loaded message history or track server-side.
+
+## Deferred from: code review of story-3.8 (2026-04-02)
+
+- Reload `GET /api/conversations` after conversation create can overwrite newer state pushed by SignalR [conversation.service.ts:82-97] — same pattern as pre-existing `loadConversations()` race condition deferred in story 3.5; fix both together with merge-based state update or `switchMap`
+- `DisplayName` nullable from DB could cause frontend `.toLowerCase()` crash in filter [IdentityService.cs:186] — pre-existing data integrity concern; coalesce to `UserName` or `Id` in the EF projection
+
+## Deferred from: code review of story-3.9 (2026-04-02)
+
+- `loadConversations()` has no in-flight request cancellation [conversation.service.ts:51-64] — unlike MessageService.loadMessages() which cancels prior requests, loadConversations() creates overlapping HTTP subscriptions on rapid reconnects; pre-existing pattern (see also story 3.5 deferred item)

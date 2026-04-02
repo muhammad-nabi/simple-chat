@@ -1,5 +1,5 @@
 # generated: 2026-03-28
-# last_updated: 2026-03-30
+# last_updated: 2026-04-02
 # project: simple-chat
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-28
-last_updated: 2026-03-30
+last_updated: 2026-04-02
 project: simple-chat
 project_key: NOKEY
 tracking_system: file-system
@@ -60,17 +60,17 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Real-Time Private Messaging
-  epic-3: backlog
-  3-1-conversation-message-data-model: backlog
-  3-2-send-persist-messages-backend: backlog
-  3-3-signalr-real-time-messaging-hub: backlog
-  3-4-design-token-system-chat-layout-shell: backlog
-  3-5-conversation-list-navigation: backlog
-  3-6-chat-window-message-display: backlog
-  3-7-message-input-optimistic-send: backlog
-  3-8-new-private-conversation-flow: backlog
-  3-9-connection-status-auto-reconnect: backlog
-  epic-3-retrospective: optional
+  epic-3: done
+  3-1-conversation-message-data-model: done
+  3-2-send-persist-messages-backend: done
+  3-3-signalr-real-time-messaging-hub: done
+  3-4-design-token-system-chat-layout-shell: done
+  3-5-conversation-list-navigation: done
+  3-6-chat-window-message-display: done
+  3-7-message-input-optimistic-send: done
+  3-8-new-private-conversation-flow: done
+  3-9-connection-status-auto-reconnect: done
+  epic-3-retrospective: done
 
   # Epic 4: Group Conversations
   epic-4: backlog

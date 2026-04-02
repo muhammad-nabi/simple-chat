@@ -1,0 +1,68 @@
+@use 'styles/tokens' as t;
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: t.$space-md;
+
+  &.consecutive {
+    margin-bottom: t.$space-xs;
+  }
+
+  &.own {
+    align-items: flex-end;
+
+    .bubble {
+      background-color: t.$color-bubble-own;
+      color: t.$color-bubble-own-text;
+      border-radius: t.$bubble-radius t.$bubble-radius t.$radius-sm t.$bubble-radius;
+    }
+
+    .timestamp {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  &.other {
+    align-items: flex-start;
+
+    .bubble {
+      background-color: t.$color-bubble-other;
+      color: t.$color-bubble-other-text;
+      border-radius: t.$bubble-radius t.$bubble-radius t.$bubble-radius t.$radius-sm;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .timestamp {
+      color: t.$color-text-secondary;
+    }
+  }
+}
+
+.sender-name {
+  font-size: t.$font-size-caption;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-primary;
+  margin-bottom: t.$space-xs;
+  padding-left: t.$space-xs;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: t.$space-sm t.$space-md;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.content {
+  font-size: t.$font-size-body-lg;
+  line-height: t.$line-height-relaxed;
+  white-space: pre-wrap;
+}
+
+.timestamp {
+  display: block;
+  font-size: t.$font-size-caption;
+  margin-top: t.$space-xs;
+  text-align: right;
+}

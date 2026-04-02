@@ -1,0 +1,10 @@
+@if (visibleState === 'Reconnecting') {
+  <div class="connection-banner reconnecting" role="status" aria-live="assertive">
+    Reconnecting...
+  </div>
+}
+@if (visibleState === 'Disconnected') {
+  <div class="connection-banner disconnected" role="status" aria-live="assertive">
+    Connection lost. Check your internet connection.
+  </div>
+}

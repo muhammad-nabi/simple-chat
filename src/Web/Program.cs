@@ -185,6 +185,8 @@ app.UseExceptionHandler(options => { });
 
 app.MapEndpoints(typeof(Program).Assembly);
 
+app.MapHub<SimpleChat.Web.Hubs.ChatHub>("/hubs/chat");
+
 app.MapFallbackToFile("index.html");
 
 app.Run();

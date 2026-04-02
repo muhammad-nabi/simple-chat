@@ -31,4 +31,12 @@ public interface IIdentityService
 
     Task<(string UserId, string DisplayName, string Email, UserRole Role, bool IsActive)?>
         FindUserByIdAsync(string userId);
+
+    Task<Dictionary<string, string>> GetDisplayNamesByIdsAsync(
+        IEnumerable<string> userIds, CancellationToken cancellationToken);
+
+    Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken);
+
+    Task<List<(string UserId, string DisplayName)>> GetAllActiveUsersAsync(
+        string excludeUserId, CancellationToken cancellationToken);
 }

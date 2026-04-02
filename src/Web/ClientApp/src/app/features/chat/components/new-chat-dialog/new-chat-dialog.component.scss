@@ -1,0 +1,193 @@
+@use 'styles/tokens' as t;
+
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: t.$z-modal-backdrop;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-panel {
+  background-color: t.$color-background;
+  border-radius: t.$avatar-radius;
+  box-shadow: t.$shadow-lg;
+  width: 100%;
+  max-width: 400px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  z-index: t.$z-modal;
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$space-lg;
+  border-bottom: 1px solid t.$color-divider;
+
+  h3 {
+    margin: 0;
+    font-size: t.$font-size-heading;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-text-primary;
+  }
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: t.$font-size-heading;
+  color: t.$color-text-secondary;
+  cursor: pointer;
+  padding: t.$space-xs;
+  border-radius: t.$radius-sm;
+  line-height: 1;
+
+  &:hover {
+    color: t.$color-text-primary;
+    background-color: t.$color-surface-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.dialog-filter {
+  padding: t.$space-md t.$space-lg;
+}
+
+.filter-input {
+  width: 100%;
+  padding: t.$space-sm t.$space-md;
+  border: 1.5px solid t.$color-divider;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body;
+  font-family: t.$font-family;
+  color: t.$color-text-primary;
+  background-color: t.$color-background;
+  outline: none;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: t.$color-primary;
+    box-shadow: 0 0 0 1px t.$color-primary;
+  }
+
+  &::placeholder {
+    color: t.$color-text-tertiary;
+  }
+}
+
+.dialog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: t.$space-sm;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: t.$space-md;
+  padding: t.$space-sm t.$space-lg;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background-color t.$transition-fast;
+  outline: none;
+
+  &:hover {
+    background-color: t.$color-surface-hover;
+  }
+
+  &.active {
+    background-color: t.$color-surface-hover;
+  }
+
+  &:focus-visible {
+    background-color: t.$color-surface-hover;
+    outline: 2px solid t.$color-primary;
+    outline-offset: -2px;
+  }
+}
+
+.member-name {
+  font-size: t.$font-size-body;
+  color: t.$color-text-primary;
+}
+
+.empty-filter,
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-xl;
+
+  p {
+    color: t.$color-text-secondary;
+    font-size: t.$font-size-body;
+    margin: 0;
+  }
+}
+
+.error-state p {
+  color: t.$color-error;
+}
+
+// Skeleton loading
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: t.$space-md;
+  padding: t.$space-sm t.$space-lg;
+  min-height: 44px;
+}
+
+.skeleton-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: t.$avatar-radius;
+  background-color: t.$color-surface;
+  flex-shrink: 0;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-name {
+  height: 14px;
+  width: 120px;
+  border-radius: t.$radius-sm;
+  background-color: t.$color-surface;
+  animation: shimmer 1.5s infinite;
+  animation-delay: 0.1s;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-avatar,
+  .skeleton-name {
+    animation: none;
+  }
+}
