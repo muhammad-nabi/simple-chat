@@ -145,6 +145,85 @@ public class ConversationEndpointTests
         Assert.That(body2.GetProperty("hasMore").GetBoolean(), Is.False);
     }
 
+    // --- Get Conversations Tests ---
+
+    [Test]
+    public async Task GetConversations_Authenticated_ReturnsOk()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        SetAuth(token1);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task GetConversations_WithConversations_ReturnsConversationsWithDetails()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        SetAuth(token1);
+
+        long conversationId = await CreateConversation(user2Id);
+        await SendMessage(conversationId, "Hello!");
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(1));
+
+        JsonElement conv = body[0];
+        Assert.That(conv.GetProperty("id").GetInt64(), Is.EqualTo(conversationId));
+        Assert.That(conv.GetProperty("type").GetString(), Is.EqualTo("Private"));
+        Assert.That(conv.GetProperty("lastMessagePreview").GetString(), Is.EqualTo("Hello!"));
+        Assert.That(conv.GetProperty("otherParticipants").GetArrayLength(), Is.EqualTo(1));
+        Assert.That(conv.GetProperty("otherParticipants")[0].GetProperty("displayName").GetString(), Is.EqualTo("User Two"));
+    }
+
+    [Test]
+    public async Task GetConversations_SortedByLastMessageAt()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        long conv1 = await CreateConversation(user2Id);
+        await SendMessage(conv1, "Old message");
+        long conv2 = await CreateConversation(user3Id);
+        await SendMessage(conv2, "New message");
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations");
+
+        // Assert
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(2));
+        Assert.That(body[0].GetProperty("id").GetInt64(), Is.EqualTo(conv2)); // Most recent first
+        Assert.That(body[1].GetProperty("id").GetInt64(), Is.EqualTo(conv1));
+    }
+
+    [Test]
+    public async Task GetConversations_Unauthenticated_Returns401()
+    {
+        // Act (no auth header)
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
     // --- Auth Tests ---
 
     [Test]

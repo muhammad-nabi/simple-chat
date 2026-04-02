@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using SimpleChat.Application.Messaging.Commands.CreateConversation;
 using SimpleChat.Application.Messaging.Commands.SendMessage;
+using SimpleChat.Application.Messaging.Queries.GetConversations;
 using SimpleChat.Application.Messaging.Queries.GetMessageHistory;
 
 namespace SimpleChat.Web.Endpoints;
@@ -11,6 +12,9 @@ public class Conversations : IEndpointGroup
 
     public static void Map(RouteGroupBuilder groupBuilder)
     {
+        groupBuilder.MapGet(GetConversations)
+            .RequireAuthorization();
+
         groupBuilder.MapPost(CreateConversation)
             .RequireAuthorization();
 
@@ -19,6 +23,13 @@ public class Conversations : IEndpointGroup
 
         groupBuilder.MapGet(GetMessageHistory, "{conversationId:long}/messages")
             .RequireAuthorization();
+    }
+
+    public static async Task<Ok<List<ConversationListDto>>> GetConversations(
+        ISender sender)
+    {
+        List<ConversationListDto> conversations = await sender.Send(new GetConversationsQuery());
+        return TypedResults.Ok(conversations);
     }
 
     public static async Task<Ok<CreateConversationResponse>> CreateConversation(

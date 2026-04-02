@@ -1,7 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { ConversationListComponent } from '../conversation-list/conversation-list.component';
 import { ChatWindowComponent } from '../chat-window/chat-window.component';
 import { OnlineUsersComponent } from '../online-users/online-users.component';
+import { ConversationService } from '../../services/conversation.service';
+import { Conversation } from '../../models/conversation.model';
 
 export type ActivePanel = 'list' | 'chat' | 'members';
 export type LayoutMode = 'desktop' | 'tablet' | 'mobile';
@@ -9,11 +12,15 @@ export type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [ConversationListComponent, ChatWindowComponent, OnlineUsersComponent],
+  imports: [AsyncPipe, ConversationListComponent, ChatWindowComponent, OnlineUsersComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss',
 })
 export class ChatLayoutComponent implements OnInit, OnDestroy {
+  private readonly conversationService = inject(ConversationService);
+
+  readonly selectedConversation$ = this.conversationService.selectedConversation;
+
   layoutMode: LayoutMode = 'desktop';
   activePanel: ActivePanel = 'list';
   showMembersPanel = false;
@@ -78,10 +85,18 @@ export class ChatLayoutComponent implements OnInit, OnDestroy {
     return this.showMembersPanel;
   }
 
-  selectConversation(): void {
+  onConversationSelected(conversation: Conversation): void {
+    void conversation; // Used by template binding; panel switch handled here
     if (this.isMobile) {
       this.activePanel = 'chat';
     }
+  }
+
+  getConversationTitle(conversation: Conversation | null): string {
+    if (!conversation) {
+      return 'Select a conversation';
+    }
+    return this.conversationService.getDisplayName(conversation);
   }
 
   navigateBack(): void {

@@ -102,3 +102,10 @@
 ## Deferred from: code review of story-3.3 (2026-04-02)
 
 - No message-gap fill or conversation-list refresh on reconnect (AC4) — explicitly deferred per Task 5.3 to Stories 3.4-3.7 when MessageService and conversation state management are built
+
+## Deferred from: code review of story-3.5 (2026-04-02)
+
+- `loadConversations()` has no concurrent call guard — multiple rapid calls (e.g., multiple SignalR messages for unknown conversations) fire parallel HTTP requests with no cancellation; race condition where older response overwrites newer. Minor at current scale.
+- No pagination on GetConversations endpoint — unbounded query loads all conversations, participants, and latest messages. Acceptable at current scale; add cursor/offset pagination when conversation counts grow.
+- Selected conversation object becomes stale after SignalR update — `_selectedConversation$` holds old reference while `_conversations$` gets updated copy. No current consumer of stale properties but will cause bugs when future code reads `selectedConversation$` for `unreadCount` or `lastMessagePreview`.
+- Unit tests (GetConversationsQueryHandlerTests) use NUnit `Assert.That` instead of Shouldly — follows existing test file patterns in this project; pre-existing convention inconsistency.

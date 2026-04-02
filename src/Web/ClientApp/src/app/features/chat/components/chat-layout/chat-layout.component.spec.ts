@@ -1,13 +1,31 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { BehaviorSubject } from 'rxjs';
 import { ChatLayoutComponent } from './chat-layout.component';
+import { ConversationService } from '../../services/conversation.service';
+import type { Conversation } from '../../models/conversation.model';
 
 describe('ChatLayoutComponent', () => {
   let component: ChatLayoutComponent;
   let fixture: ComponentFixture<ChatLayoutComponent>;
 
   beforeEach(async () => {
+    const selectedSubject = new BehaviorSubject<Conversation | null>(null);
+    const mockConversationService = {
+      selectedConversation: selectedSubject.asObservable(),
+      conversations: new BehaviorSubject<Conversation[]>([]).asObservable(),
+      loading: new BehaviorSubject<boolean>(false).asObservable(),
+      error: new BehaviorSubject<string | null>(null).asObservable(),
+      loadConversations: jest.fn(),
+      selectConversation: jest.fn(),
+      clearSelection: jest.fn(),
+      getDisplayName: jest.fn().mockReturnValue('Test Conversation'),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ChatLayoutComponent],
+      providers: [
+        { provide: ConversationService, useValue: mockConversationService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChatLayoutComponent);
@@ -60,7 +78,7 @@ describe('ChatLayoutComponent', () => {
   it('should switch to chat panel on mobile when selectConversation is called', () => {
     component.layoutMode = 'mobile';
     component.activePanel = 'list';
-    component.selectConversation();
+    component.onConversationSelected({} as Conversation);
     expect(component.activePanel).toBe('chat');
     expect(component.showChatArea).toBe(true);
     expect(component.showSidebar).toBe(false);

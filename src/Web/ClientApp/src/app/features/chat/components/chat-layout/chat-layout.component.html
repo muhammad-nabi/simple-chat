@@ -11,7 +11,7 @@
       <div class="sidebar-header">
         <h2>Chats</h2>
       </div>
-      <app-conversation-list />
+      <app-conversation-list (conversationSelected)="onConversationSelected($event)" />
     </aside>
   }
 
@@ -33,7 +33,7 @@
             &#9776;
           </button>
         }
-        <span class="chat-title">Conversation</span>
+        <span class="chat-title">{{ getConversationTitle((selectedConversation$ | async) ?? null) }}</span>
         @if (!isTablet) {
           <button class="toggle-members-button"
                   (click)="toggleMembers()"
