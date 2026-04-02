@@ -158,4 +158,25 @@ public class IdentityService : IIdentityService
 
         return (user.Id, user.DisplayName, user.Email ?? string.Empty, user.Role, user.IsActive);
     }
+
+    public async Task<Dictionary<string, string>> GetDisplayNamesByIdsAsync(
+        IEnumerable<string> userIds, CancellationToken cancellationToken)
+    {
+        List<string> idList = userIds.ToList();
+
+        if (idList.Count == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        return await _userManager.Users
+            .Where(u => idList.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+    }
+
+    public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken)
+    {
+        return await _userManager.Users
+            .AnyAsync(u => u.Id == userId, cancellationToken);
+    }
 }

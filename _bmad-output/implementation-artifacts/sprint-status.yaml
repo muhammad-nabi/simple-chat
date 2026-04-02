@@ -62,7 +62,7 @@ development_status:
   # Epic 3: Real-Time Private Messaging
   epic-3: in-progress
   3-1-conversation-message-data-model: done
-  3-2-send-persist-messages-backend: backlog
+  3-2-send-persist-messages-backend: done
   3-3-signalr-real-time-messaging-hub: backlog
   3-4-design-token-system-chat-layout-shell: backlog
   3-5-conversation-list-navigation: backlog
