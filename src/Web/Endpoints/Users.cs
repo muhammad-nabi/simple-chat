@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.HttpResults;
+using SimpleChat.Application.Identity.Queries.GetTeamMembers;
 
 namespace SimpleChat.Web.Endpoints;
 
@@ -8,7 +9,14 @@ public class Users : IEndpointGroup
 
     public static void Map(RouteGroupBuilder groupBuilder)
     {
-        // Auth endpoints moved to Auth endpoint group (JWT-based)
-        // User management endpoints will be added in Epic 8
+        groupBuilder.MapGet(GetTeamMembers, "team-members")
+            .RequireAuthorization();
+    }
+
+    public static async Task<Ok<List<TeamMemberDto>>> GetTeamMembers(
+        ISender sender)
+    {
+        List<TeamMemberDto> members = await sender.Send(new GetTeamMembersQuery());
+        return TypedResults.Ok(members);
     }
 }

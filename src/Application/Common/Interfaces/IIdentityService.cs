@@ -36,4 +36,7 @@ public interface IIdentityService
         IEnumerable<string> userIds, CancellationToken cancellationToken);
 
     Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken);
+
+    Task<List<(string UserId, string DisplayName)>> GetAllActiveUsersAsync(
+        string excludeUserId, CancellationToken cancellationToken);
 }

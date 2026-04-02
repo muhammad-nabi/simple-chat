@@ -7,6 +7,44 @@
   overflow-y: auto;
 }
 
+.list-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: t.$space-sm t.$space-md;
+  border-bottom: 1px solid t.$color-divider;
+}
+
+.new-chat-button {
+  display: flex;
+  align-items: center;
+  gap: t.$space-xs;
+  padding: t.$space-xs t.$space-md;
+  background-color: t.$color-primary;
+  color: t.$color-text-inverse;
+  border: none;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body-sm;
+  font-family: t.$font-family;
+  font-weight: t.$font-weight-medium;
+  cursor: pointer;
+  transition: background-color t.$transition-fast;
+  min-height: 32px;
+
+  &:hover {
+    background-color: t.$color-primary-dark;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.new-chat-icon {
+  font-size: t.$font-size-body-lg;
+  line-height: 1;
+}
+
 .conversation-list {
   display: flex;
   flex-direction: column;

@@ -1,10 +1,14 @@
 import { Injectable, inject, DestroyRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { Conversation } from '../models/conversation.model';
 import { SignalRService } from '../../../core/signalr/signalr.service';
 import { MessagePayload } from '../../../core/signalr/signalr.events';
 import { AuthService } from '../../../core/services/auth.service';
+
+export interface CreateConversationResponse {
+  id: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ConversationService {
@@ -19,10 +23,13 @@ export class ConversationService {
   private readonly _error$ = new BehaviorSubject<string | null>(null);
   private currentUserId: string | null = null;
 
+  private readonly _conversationCreated$ = new Subject<number>();
+
   readonly conversations: Observable<Conversation[]> = this._conversations$.asObservable();
   readonly selectedConversation: Observable<Conversation | null> = this._selectedConversation$.asObservable();
   readonly loading: Observable<boolean> = this._loading$.asObservable();
   readonly error: Observable<string | null> = this._error$.asObservable();
+  readonly conversationCreated: Observable<number> = this._conversationCreated$.asObservable();
 
   constructor() {
     const msgSub = this.signalRService.messageReceived.subscribe(
@@ -65,6 +72,37 @@ export class ConversationService {
       return conversation.otherParticipants[0].displayName;
     }
     return conversation.name ?? 'Conversation';
+  }
+
+  createConversation(otherUserId: string): void {
+    this._error$.next(null);
+    this.http.post<CreateConversationResponse>('/api/conversations', { otherUserId }).subscribe({
+      next: (response: CreateConversationResponse) => {
+        // Join SignalR group for the new conversation
+        this.signalRService.joinConversation(response.id).catch(() => {
+          // Non-critical — messages may not arrive in real-time until reconnect
+        });
+        // Reload conversations, then select the new one
+        this.http.get<Conversation[]>('/api/conversations').subscribe({
+          next: (conversations: Conversation[]) => {
+            this._conversations$.next(conversations);
+            const created = conversations.find((c: Conversation) => c.id === response.id);
+            if (created) {
+              this._selectedConversation$.next(created);
+            }
+            this._conversationCreated$.next(response.id);
+          },
+          error: () => {
+            // Conversations failed to reload — still emit so dialog closes, but warn
+            this._error$.next('Conversation created but failed to refresh list');
+            this._conversationCreated$.next(response.id);
+          },
+        });
+      },
+      error: () => {
+        this._error$.next('Failed to create conversation');
+      },
+    });
   }
 
   private handleIncomingMessage(message: MessagePayload): void {

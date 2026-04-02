@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { ConversationListComponent } from './conversation-list.component';
 import { ConversationService } from '../../services/conversation.service';
 import { Conversation } from '../../models/conversation.model';
@@ -10,6 +10,7 @@ describe('ConversationListComponent', () => {
   let conversationsSubject: BehaviorSubject<Conversation[]>;
   let selectedSubject: BehaviorSubject<Conversation | null>;
   let loadingSubject: BehaviorSubject<boolean>;
+  let conversationCreatedSubject: Subject<number>;
   let mockConversationService: Partial<ConversationService>;
 
   const mockConversations: Conversation[] = [
@@ -37,14 +38,17 @@ describe('ConversationListComponent', () => {
     conversationsSubject = new BehaviorSubject<Conversation[]>([]);
     selectedSubject = new BehaviorSubject<Conversation | null>(null);
     loadingSubject = new BehaviorSubject<boolean>(false);
+    conversationCreatedSubject = new Subject<number>();
 
     mockConversationService = {
       conversations: conversationsSubject.asObservable(),
       selectedConversation: selectedSubject.asObservable(),
       loading: loadingSubject.asObservable(),
       error: new BehaviorSubject<string | null>(null).asObservable(),
+      conversationCreated: conversationCreatedSubject.asObservable(),
       loadConversations: jest.fn(),
       selectConversation: jest.fn(),
+      createConversation: jest.fn(),
       getDisplayName: jest.fn((c: Conversation) =>
         c.type === 'Private' ? c.otherParticipants[0]?.displayName ?? 'Unknown' : c.name ?? 'Conversation'
       ),
@@ -207,5 +211,53 @@ describe('ConversationListComponent', () => {
 
     const items = fixture.nativeElement.querySelectorAll('.skeleton-item');
     expect(items[0].getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('should render New Chat button', () => {
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('.new-chat-button');
+    expect(button).toBeTruthy();
+    expect(button.getAttribute('aria-label')).toBe('Start new chat');
+    expect(button.textContent).toContain('New Chat');
+  });
+
+  it('should open new chat dialog on button click', () => {
+    fixture.detectChanges();
+    expect(component.showNewChatDialog).toBe(false);
+
+    const button = fixture.nativeElement.querySelector('.new-chat-button');
+    button.click();
+    fixture.detectChanges();
+
+    expect(component.showNewChatDialog).toBe(true);
+    const dialog = fixture.nativeElement.querySelector('app-new-chat-dialog');
+    expect(dialog).toBeTruthy();
+  });
+
+  it('should close dialog when closed event fires', () => {
+    fixture.detectChanges();
+    component.showNewChatDialog = true;
+    fixture.detectChanges();
+
+    component.onNewChatClosed();
+    fixture.detectChanges();
+
+    expect(component.showNewChatDialog).toBe(false);
+  });
+
+  it('should call createConversation when user is selected', () => {
+    fixture.detectChanges();
+    component.onNewChatUserSelected({ userId: 'user-5', displayName: 'Dave' });
+    expect(mockConversationService.createConversation).toHaveBeenCalledWith('user-5');
+  });
+
+  it('should close dialog when conversation is created', () => {
+    fixture.detectChanges();
+    component.showNewChatDialog = true;
+
+    conversationCreatedSubject.next(10);
+    fixture.detectChanges();
+
+    expect(component.showNewChatDialog).toBe(false);
   });
 });

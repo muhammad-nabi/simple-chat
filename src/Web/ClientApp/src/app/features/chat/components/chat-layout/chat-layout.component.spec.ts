@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { ChatLayoutComponent } from './chat-layout.component';
 import { ConversationService } from '../../services/conversation.service';
 import type { Conversation } from '../../models/conversation.model';
@@ -29,8 +29,10 @@ describe('ChatLayoutComponent', () => {
       conversations: new BehaviorSubject<Conversation[]>([]).asObservable(),
       loading: new BehaviorSubject<boolean>(false).asObservable(),
       error: new BehaviorSubject<string | null>(null).asObservable(),
+      conversationCreated: new Subject<number>().asObservable(),
       loadConversations: jest.fn(),
       selectConversation: jest.fn(),
+      createConversation: jest.fn(),
       clearSelection: jest.fn(),
       getDisplayName: jest.fn().mockReturnValue('Test Conversation'),
     };

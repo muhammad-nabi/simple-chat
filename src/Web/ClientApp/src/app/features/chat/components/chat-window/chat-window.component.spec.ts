@@ -231,4 +231,25 @@ describe('ChatWindowComponent', () => {
     const msg: Message = mockMessages[0];
     expect(component.trackByMessageId(0, msg)).toBe(1);
   });
+
+  it('should show empty messages state when conversation selected but no messages', () => {
+    selectedConvSubject.next(mockConversation);
+    messagesSubject.next([]);
+    loadingSubject.next(false);
+    fixture.detectChanges();
+
+    const emptyState = fixture.nativeElement.querySelector('.empty-state-messages');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState.textContent).toContain('No messages yet');
+  });
+
+  it('should not show empty messages state when loading', () => {
+    selectedConvSubject.next(mockConversation);
+    messagesSubject.next([]);
+    loadingSubject.next(true);
+    fixture.detectChanges();
+
+    const emptyState = fixture.nativeElement.querySelector('.empty-state-messages');
+    expect(emptyState).toBeFalsy();
+  });
 });

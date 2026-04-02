@@ -1,3 +1,12 @@
+<div class="list-header">
+  <button class="new-chat-button"
+          (click)="openNewChat()"
+          aria-label="Start new chat">
+    <span class="new-chat-icon">+</span>
+    <span class="new-chat-text">New Chat</span>
+  </button>
+</div>
+
 @if (loading$ | async) {
   <div class="skeleton-list" aria-busy="true">
     @for (item of [1, 2, 3, 4, 5]; track item) {
@@ -50,4 +59,10 @@
       </div>
     }
   </div>
+}
+
+@if (showNewChatDialog) {
+  <app-new-chat-dialog
+    (userSelected)="onNewChatUserSelected($event)"
+    (closed)="onNewChatClosed()" />
 }

@@ -68,7 +68,7 @@ development_status:
   3-5-conversation-list-navigation: done
   3-6-chat-window-message-display: done
   3-7-message-input-optimistic-send: done
-  3-8-new-private-conversation-flow: backlog
+  3-8-new-private-conversation-flow: done
   3-9-connection-status-auto-reconnect: backlog
   epic-3-retrospective: optional
 

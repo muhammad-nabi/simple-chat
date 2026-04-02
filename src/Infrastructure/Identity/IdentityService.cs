@@ -179,4 +179,14 @@ public class IdentityService : IIdentityService
         return await _userManager.Users
             .AnyAsync(u => u.Id == userId, cancellationToken);
     }
+
+    public async Task<List<(string UserId, string DisplayName)>> GetAllActiveUsersAsync(
+        string excludeUserId, CancellationToken cancellationToken)
+    {
+        return await _userManager.Users
+            .Where(u => u.IsActive && u.Id != excludeUserId)
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new ValueTuple<string, string>(u.Id, u.DisplayName))
+            .ToListAsync(cancellationToken);
+    }
 }

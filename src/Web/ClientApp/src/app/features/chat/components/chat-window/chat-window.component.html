@@ -20,6 +20,10 @@
       <div class="skeleton-line" style="width: 55%"></div>
     </div>
   </div>
+} @else if (messages.length === 0 && !loading) {
+  <div class="empty-state empty-state-messages">
+    <p>No messages yet — say hello!</p>
+  </div>
 } @else {
   <div class="message-list"
        #scrollContainer

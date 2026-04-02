@@ -1,0 +1,65 @@
+<div class="dialog-backdrop"
+     (click)="onBackdropClick($event)"
+     (keydown)="onKeyDown($event)"
+     role="presentation">
+  <div class="dialog-panel" role="dialog" aria-label="New Chat" aria-modal="true">
+    <div class="dialog-header">
+      <h3>New Chat</h3>
+      <button class="close-button"
+              (click)="close()"
+              aria-label="Close">
+        &#10005;
+      </button>
+    </div>
+
+    <div class="dialog-filter">
+      <input #filterInput
+             type="text"
+             class="filter-input"
+             [(ngModel)]="filterText"
+             (input)="onFilterChange()"
+             placeholder="Search team members..."
+             aria-label="Filter team members"
+             autocomplete="off" />
+    </div>
+
+    <div class="dialog-body">
+      @if (loading$ | async) {
+        <div class="skeleton-list" aria-busy="true">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="skeleton-item" aria-hidden="true">
+              <div class="skeleton-avatar"></div>
+              <div class="skeleton-name"></div>
+            </div>
+          }
+        </div>
+      } @else if (error$ | async; as errorMsg) {
+        <div class="error-state" role="alert">
+          <p>{{ errorMsg }}</p>
+        </div>
+      } @else {
+        <div class="member-list" role="listbox" aria-label="Team members">
+          @for (member of filteredMembers; track member.userId; let i = $index) {
+            <div #memberItem class="member-item"
+                 role="option"
+                 tabindex="0"
+                 [attr.aria-selected]="i === activeIndex"
+                 [class.active]="i === activeIndex"
+                 (click)="selectMember(member)"
+                 (keydown.enter)="selectMember(member); $event.stopPropagation()">
+              <app-avatar
+                [displayName]="member.displayName"
+                [userId]="member.userId"
+                size="members" />
+              <span class="member-name">{{ member.displayName }}</span>
+            </div>
+          } @empty {
+            <div class="empty-filter">
+              <p>No members match your search</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { ConversationService } from './conversation.service';
+import { ConversationService, CreateConversationResponse } from './conversation.service';
 import { Conversation } from '../models/conversation.model';
 import { SignalRService } from '../../../core/signalr/signalr.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -39,6 +39,7 @@ describe('ConversationService', () => {
 
     const mockSignalR = {
       messageReceived: messageSubject.asObservable(),
+      joinConversation: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockAuthService = {
@@ -168,5 +169,72 @@ describe('ConversationService', () => {
 
     const conv1 = result.find(c => c.id === 1);
     expect(conv1?.unreadCount).toBe(3); // Was 2, now 3
+  });
+
+  describe('createConversation', () => {
+    it('should create conversation and reload list', () => {
+      let createdId: number | undefined;
+      service.conversationCreated.subscribe(id => createdId = id);
+
+      service.createConversation('user-2');
+
+      // First: POST to create
+      const createReq = httpMock.expectOne('/api/conversations');
+      expect(createReq.request.method).toBe('POST');
+      expect(createReq.request.body).toEqual({ otherUserId: 'user-2' });
+      createReq.flush({ id: 10 } as CreateConversationResponse);
+
+      // Second: GET to reload conversations
+      const loadReq = httpMock.expectOne('/api/conversations');
+      expect(loadReq.request.method).toBe('GET');
+      loadReq.flush(mockConversations);
+
+      expect(createdId).toBe(10);
+    });
+
+    it('should select the created conversation after reload', () => {
+      let selected: Conversation | null = null;
+      service.selectedConversation.subscribe(c => selected = c);
+
+      const newConversation: Conversation = {
+        id: 10,
+        type: 'Private',
+        name: null,
+        lastMessagePreview: null,
+        lastMessageAt: null,
+        otherParticipants: [{ userId: 'user-2', displayName: 'Bob' }],
+        unreadCount: 0,
+      };
+
+      service.createConversation('user-2');
+      httpMock.expectOne({ method: 'POST', url: '/api/conversations' }).flush({ id: 10 });
+      httpMock.expectOne({ method: 'GET', url: '/api/conversations' }).flush([newConversation, ...mockConversations]);
+
+      expect(selected?.id).toBe(10);
+    });
+
+    it('should set error on create failure', () => {
+      let error: string | null = null;
+      service.error.subscribe(e => error = e);
+
+      service.createConversation('user-2');
+      httpMock.expectOne('/api/conversations').flush('Error', { status: 500, statusText: 'Error' });
+
+      expect(error).toBe('Failed to create conversation');
+    });
+
+    it('should emit conversationCreated even if reload fails', () => {
+      let createdId: number | undefined;
+      let error: string | null = null;
+      service.conversationCreated.subscribe(id => createdId = id);
+      service.error.subscribe(e => error = e);
+
+      service.createConversation('user-2');
+      httpMock.expectOne({ method: 'POST', url: '/api/conversations' }).flush({ id: 10 });
+      httpMock.expectOne({ method: 'GET', url: '/api/conversations' }).flush('Error', { status: 500, statusText: 'Error' });
+
+      expect(createdId).toBe(10);
+      expect(error).toBe('Conversation created but failed to refresh list');
+    });
   });
 });
