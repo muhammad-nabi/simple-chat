@@ -1,0 +1,51 @@
+@if (!selectedConversation) {
+  <div class="empty-state">
+    <p>Select a conversation</p>
+  </div>
+} @else if (loading && messages.length === 0) {
+  <div class="skeleton-container" aria-busy="true">
+    <div class="skeleton-bubble skeleton-left" aria-hidden="true">
+      <div class="skeleton-line" style="width: 60%"></div>
+    </div>
+    <div class="skeleton-bubble skeleton-right" aria-hidden="true">
+      <div class="skeleton-line" style="width: 45%"></div>
+    </div>
+    <div class="skeleton-bubble skeleton-left" aria-hidden="true">
+      <div class="skeleton-line" style="width: 70%"></div>
+    </div>
+    <div class="skeleton-bubble skeleton-right" aria-hidden="true">
+      <div class="skeleton-line" style="width: 40%"></div>
+    </div>
+    <div class="skeleton-bubble skeleton-left" aria-hidden="true">
+      <div class="skeleton-line" style="width: 55%"></div>
+    </div>
+  </div>
+} @else {
+  <div class="message-list"
+       #scrollContainer
+       role="log"
+       [attr.aria-live]="isLoadingHistory ? 'off' : 'polite'"
+       aria-relevant="additions"
+       (scroll)="onScroll()">
+    @if (loadingHistory && hasMore) {
+      <div class="loading-spinner" aria-label="Loading older messages">
+        <div class="spinner"></div>
+      </div>
+    }
+    @for (message of messages; track trackByMessageId($index, message)) {
+      <app-message-bubble
+        [message]="message"
+        [isOwn]="isOwnMessage(message.senderId)"
+        [showSender]="shouldShowSender($index)"
+        [isConsecutive]="isConsecutiveMessage($index)" />
+    }
+  </div>
+
+  @if (hasNewMessages) {
+    <button class="new-messages-indicator"
+            (click)="scrollToBottom()"
+            aria-label="Scroll to new messages">
+      New messages &#8595;
+    </button>
+  }
+}

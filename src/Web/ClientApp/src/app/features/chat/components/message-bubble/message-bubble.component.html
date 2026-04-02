@@ -1,0 +1,13 @@
+<div class="message-wrapper"
+     [class.own]="isOwn"
+     [class.other]="!isOwn"
+     [class.consecutive]="isConsecutive"
+     [attr.aria-label]="ariaLabel">
+  @if (showSender && !isOwn) {
+    <span class="sender-name">{{ message.senderDisplayName }}</span>
+  }
+  <div class="bubble">
+    <span class="content">{{ message.content }}</span>
+    <span class="timestamp">{{ message.sentAt | messageTimestamp }}</span>
+  </div>
+</div>

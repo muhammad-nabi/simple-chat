@@ -9,6 +9,20 @@ describe('ChatLayoutComponent', () => {
   let fixture: ComponentFixture<ChatLayoutComponent>;
 
   beforeEach(async () => {
+    // Mock matchMedia for jsdom environment
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
     const selectedSubject = new BehaviorSubject<Conversation | null>(null);
     const mockConversationService = {
       selectedConversation: selectedSubject.asObservable(),

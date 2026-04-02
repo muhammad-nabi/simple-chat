@@ -109,3 +109,7 @@
 - No pagination on GetConversations endpoint — unbounded query loads all conversations, participants, and latest messages. Acceptable at current scale; add cursor/offset pagination when conversation counts grow.
 - Selected conversation object becomes stale after SignalR update — `_selectedConversation$` holds old reference while `_conversations$` gets updated copy. No current consumer of stale properties but will cause bugs when future code reads `selectedConversation$` for `unreadCount` or `lastMessagePreview`.
 - Unit tests (GetConversationsQueryHandlerTests) use NUnit `Assert.That` instead of Shouldly — follows existing test file patterns in this project; pre-existing convention inconsistency.
+
+## Deferred from: code review of story-3.6 (2026-04-02)
+
+- `aria-busy` absent during incremental history loading — loading spinner has `aria-label` but no `aria-busy` on the scroll container during pagination fetches; accessibility enhancement for screen reader users
