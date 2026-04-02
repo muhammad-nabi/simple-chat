@@ -18,7 +18,7 @@ export class MessageBubbleComponent {
   @Input() isFirstMessage = false;
 
   get ariaLabel(): string {
-    const sender = this.isOwn ? 'You' : this.message.senderDisplayName;
+    const sender = this.isOwn ? 'You' : (this.message.senderDisplayName || 'Unknown User');
     const pipe = new MessageTimestampPipe();
     const time = pipe.transform(this.message.sentAt);
     return `${sender}: ${this.message.content}, ${time}`;

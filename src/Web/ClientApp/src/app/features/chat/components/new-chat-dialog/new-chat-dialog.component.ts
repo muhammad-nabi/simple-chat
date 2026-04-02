@@ -113,7 +113,7 @@ export class NewChatDialogComponent implements OnInit, OnDestroy {
       this.filteredMembers = [...this.allMembers];
     } else {
       this.filteredMembers = this.allMembers.filter(
-        (m: TeamMember) => m.displayName.toLowerCase().includes(term)
+        (m: TeamMember) => (m.displayName ?? '').toLowerCase().includes(term)
       );
     }
   }

@@ -60,7 +60,7 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Real-Time Private Messaging
-  epic-3: in-progress
+  epic-3: done
   3-1-conversation-message-data-model: done
   3-2-send-persist-messages-backend: done
   3-3-signalr-real-time-messaging-hub: done
@@ -70,7 +70,7 @@ development_status:
   3-7-message-input-optimistic-send: done
   3-8-new-private-conversation-flow: done
   3-9-connection-status-auto-reconnect: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: Group Conversations
   epic-4: backlog

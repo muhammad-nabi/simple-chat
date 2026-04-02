@@ -171,7 +171,7 @@ public class IdentityService : IIdentityService
 
         return await _userManager.Users
             .Where(u => idList.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? string.Empty, cancellationToken);
     }
 
     public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken)

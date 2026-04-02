@@ -73,7 +73,7 @@ export class ConversationService {
 
   getDisplayName(conversation: Conversation): string {
     if (conversation.type === 'Private' && conversation.otherParticipants.length > 0) {
-      return conversation.otherParticipants[0].displayName;
+      return conversation.otherParticipants[0].displayName || 'Unknown User';
     }
     return conversation.name ?? 'Conversation';
   }

@@ -46,15 +46,15 @@ export class AvatarComponent {
   readonly presenceStatus = input<string | undefined>(undefined);
 
   readonly initials = computed(() => {
-    const name = this.displayName().trim();
+    const name = (this.displayName() ?? '').trim();
     if (!name) {
       return '?';
     }
-    const words = name.split(/\s+/);
+    const words = name.split(/\s+/).filter(w => w.length > 0);
     if (words.length >= 2) {
       return (words[0][0] + words[1][0]).toUpperCase();
     }
-    return words[0][0].toUpperCase();
+    return words.length > 0 ? words[0][0].toUpperCase() : '?';
   });
 
   readonly backgroundColor = computed(() => {
