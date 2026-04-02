@@ -3,6 +3,7 @@ import { AsyncPipe } from '@angular/common';
 import { ConversationListComponent } from '../conversation-list/conversation-list.component';
 import { ChatWindowComponent } from '../chat-window/chat-window.component';
 import { OnlineUsersComponent } from '../online-users/online-users.component';
+import { MessageInputComponent } from '../message-input/message-input.component';
 import { ConversationService } from '../../services/conversation.service';
 import { Conversation } from '../../models/conversation.model';
 
@@ -12,7 +13,7 @@ export type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [AsyncPipe, ConversationListComponent, ChatWindowComponent, OnlineUsersComponent],
+  imports: [AsyncPipe, ConversationListComponent, ChatWindowComponent, OnlineUsersComponent, MessageInputComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss',
 })

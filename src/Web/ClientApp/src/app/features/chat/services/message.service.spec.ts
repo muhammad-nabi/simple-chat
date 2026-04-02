@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MessageService } from './message.service';
-import { MessageHistoryResponse } from '../models/message.model';
+import { Message, MessageHistoryResponse } from '../models/message.model';
 import { SignalRService } from '../../../core/signalr/signalr.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Subject, BehaviorSubject } from 'rxjs';
@@ -23,11 +23,15 @@ describe('MessageService', () => {
     nextCursor: 1,
   };
 
+  let mockSendMessage: jest.Mock;
+
   beforeEach(() => {
     messageReceivedSubject = new Subject<MessagePayload>();
+    mockSendMessage = jest.fn();
 
     const mockSignalR = {
       messageReceived: messageReceivedSubject.asObservable(),
+      sendMessage: mockSendMessage,
     };
 
     const mockAuth = {
@@ -320,6 +324,139 @@ describe('MessageService', () => {
 
     it('should return false for other messages', () => {
       expect(service.isOwnMessage('user-2')).toBe(false);
+    });
+  });
+
+  describe('sendMessage', () => {
+    beforeEach(() => {
+      // Set up active conversation
+      service.loadMessages(1);
+      const req = httpTesting.expectOne('/api/conversations/1/messages');
+      req.flush({ messages: [], hasMore: false, nextCursor: null });
+    });
+
+    it('should add optimistic message with sending state immediately', () => {
+      mockSendMessage.mockReturnValue(new Promise(() => { /* never resolves */ })); // never resolves
+      let messages: Message[] = [];
+      service.messages$.subscribe(m => messages = m);
+
+      service.sendMessage(1, 'Hello');
+
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('Hello');
+      expect(messages[0].checkmarkState).toBe('sending');
+      expect(messages[0].id).toBeLessThan(0);
+      expect(messages[0].senderId).toBe('user-1');
+    });
+
+    it('should return tempId from sendMessage', () => {
+      mockSendMessage.mockReturnValue(new Promise(() => { /* never resolves */ }));
+      const result = service.sendMessage(1, 'Hello');
+      expect(result.tempId).toBeLessThan(0);
+    });
+
+    it('should update optimistic message to sent on server confirmation', async () => {
+      mockSendMessage.mockResolvedValue(42);
+      let messages: Message[] = [];
+      service.messages$.subscribe(m => messages = m);
+
+      service.sendMessage(1, 'Hello');
+      await Promise.resolve(); // flush microtasks
+
+      expect(messages.length).toBe(1);
+      expect(messages[0].id).toBe(42);
+      expect(messages[0].checkmarkState).toBe('sent');
+    });
+
+    it('should emit sendConfirmed$ on server confirmation', async () => {
+      mockSendMessage.mockResolvedValue(42);
+      let confirmedConvId: number | null = null;
+      service.sendConfirmed$.subscribe(id => confirmedConvId = id);
+
+      service.sendMessage(1, 'Hello');
+      await Promise.resolve();
+
+      expect(confirmedConvId).toBe(1);
+    });
+
+    it('should remove optimistic message and set error on failure', async () => {
+      mockSendMessage.mockRejectedValue(new Error('Connection failed'));
+      let messages: Message[] = [];
+      let sendError: string | null = null;
+      service.messages$.subscribe(m => messages = m);
+      service.sendError$.subscribe(e => sendError = e);
+
+      service.sendMessage(1, 'Hello');
+      await Promise.resolve(); // flush microtasks
+      // Need another tick for catch handler
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(messages.length).toBe(0);
+      expect(sendError).toBe('Couldn\'t send \u2014 tap to retry');
+    });
+
+    it('should clear send error on new send attempt', () => {
+      mockSendMessage.mockReturnValue(new Promise(() => { /* never resolves */ }));
+      let sendError: string | null = 'previous error';
+      service.sendError$.subscribe(e => sendError = e);
+
+      service.sendMessage(1, 'Hello');
+
+      expect(sendError).toBeNull();
+    });
+
+    it('should skip duplicate incoming message after optimistic confirmation', async () => {
+      mockSendMessage.mockResolvedValue(42);
+      let messages: Message[] = [];
+      service.messages$.subscribe(m => messages = m);
+
+      service.sendMessage(1, 'Hello');
+      await Promise.resolve(); // flush microtasks
+
+      // Simulate SignalR broadcasting the same message back
+      messageReceivedSubject.next({
+        id: 42,
+        conversationId: 1,
+        senderId: 'user-1',
+        senderDisplayName: 'Test',
+        content: 'Hello',
+        sentAt: new Date().toISOString(),
+        messageType: 'Text',
+      });
+
+      expect(messages.length).toBe(1);
+      expect(messages[0].id).toBe(42);
+    });
+
+    it('should track first message sent per conversation', () => {
+      mockSendMessage.mockReturnValue(new Promise(() => { /* never resolves */ }));
+
+      expect(service.isFirstMessageInConversation(1)).toBe(true);
+    });
+
+    it('should mark first message as sent after confirmation', async () => {
+      mockSendMessage.mockResolvedValue(42);
+
+      service.sendMessage(1, 'Hello');
+      await Promise.resolve();
+
+      expect(service.isFirstMessageInConversation(1)).toBe(false);
+    });
+  });
+
+  describe('clearSendError', () => {
+    it('should clear send error', () => {
+      let sendError: string | null = null;
+      service.sendError$.subscribe(e => sendError = e);
+
+      // Trigger a send error
+      mockSendMessage.mockRejectedValue(new Error('fail'));
+      service.loadMessages(1);
+      const req = httpTesting.expectOne('/api/conversations/1/messages');
+      req.flush({ messages: [], hasMore: false, nextCursor: null });
+
+      service.clearSendError();
+      expect(sendError).toBeNull();
     });
   });
 });

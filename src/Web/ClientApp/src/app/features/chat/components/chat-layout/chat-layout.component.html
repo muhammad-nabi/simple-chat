@@ -44,6 +44,9 @@
         }
       </div>
       <app-chat-window />
+      @if ((selectedConversation$ | async) !== null) {
+        <app-message-input [layoutMode]="layoutMode" />
+      }
     </section>
   }
 

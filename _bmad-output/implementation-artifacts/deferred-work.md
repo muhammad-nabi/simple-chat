@@ -113,3 +113,8 @@
 ## Deferred from: code review of story-3.6 (2026-04-02)
 
 - `aria-busy` absent during incremental history loading — loading spinner has `aria-label` but no `aria-busy` on the scroll container during pagination fetches; accessibility enhancement for screen reader users
+
+## Deferred from: code review of story-3.7 (2026-04-02)
+
+- senderDisplayName hardcoded to empty string in optimistic message [message.service.ts:136] — optimistic message uses `senderDisplayName: ''`; in private chats own messages don't show sender so invisible, but future group chats will show blank name. Server echo is suppressed by pendingMessageIds so it never gets corrected.
+- isFirstMessageInConversation doesn't check loaded history [message.service.ts:127-129] — method returns true for any conversation not yet in firstMessageSent map, even if history has prior messages from this user. Celebrate animation fires incorrectly. Needs broader fix: seed from loaded message history or track server-side.

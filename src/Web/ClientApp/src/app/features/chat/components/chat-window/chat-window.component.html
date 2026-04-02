@@ -37,7 +37,8 @@
         [message]="message"
         [isOwn]="isOwnMessage(message.senderId)"
         [showSender]="shouldShowSender($index)"
-        [isConsecutive]="isConsecutiveMessage($index)" />
+        [isConsecutive]="isConsecutiveMessage($index)"
+        [isFirstMessage]="message.checkmarkState === 'sent' && isFirstSentMessage()" />
     }
   </div>
 

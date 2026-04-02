@@ -1,3 +1,5 @@
+export type CheckmarkState = 'sending' | 'sent';
+
 export interface Message {
   id: number;
   conversationId: number;
@@ -6,6 +8,7 @@ export interface Message {
   content: string;
   sentAt: string;
   messageType: string;
+  checkmarkState?: CheckmarkState;
 }
 
 export interface MessageHistoryResponse {

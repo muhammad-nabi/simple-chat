@@ -8,6 +8,13 @@
   }
   <div class="bubble">
     <span class="content">{{ message.content }}</span>
-    <span class="timestamp">{{ message.sentAt | messageTimestamp }}</span>
+    <span class="timestamp">
+      {{ message.sentAt | messageTimestamp }}
+      @if (isOwn && message.checkmarkState) {
+        <app-checkmark
+          [state]="message.checkmarkState"
+          [animate]="isFirstMessage && message.checkmarkState === 'sent'" />
+      }
+    </span>
   </div>
 </div>

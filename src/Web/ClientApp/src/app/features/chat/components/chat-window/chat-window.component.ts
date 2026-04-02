@@ -182,6 +182,11 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     return this.messages[index].senderId === this.messages[index - 1].senderId;
   }
 
+  isFirstSentMessage(): boolean {
+    return this.selectedConversation !== null
+      && this.messageService.isFirstMessageInConversation(this.selectedConversation.id);
+  }
+
   trackByMessageId(_index: number, message: Message): number {
     return message.id;
   }
