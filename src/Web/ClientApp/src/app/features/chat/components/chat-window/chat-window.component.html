@@ -28,7 +28,7 @@
   <div class="message-list"
        #scrollContainer
        role="log"
-       [attr.aria-live]="isLoadingHistory ? 'off' : 'polite'"
+       [attr.aria-live]="loadingHistory ? 'off' : 'polite'"
        aria-relevant="additions"
        (scroll)="onScroll()">
     @if (loadingHistory && hasMore) {
