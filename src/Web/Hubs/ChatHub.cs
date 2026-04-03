@@ -54,4 +54,20 @@ public class ChatHub(ISender sender, IApplicationDbContext db) : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, conversationId.ToString());
     }
+
+    public async Task LeaveConversation(long conversationId)
+    {
+        string userId = Context.UserIdentifier
+            ?? throw new HubException("User not authenticated.");
+
+        bool isParticipant = await db.ConversationParticipants
+            .AnyAsync(cp => cp.ConversationId == conversationId && cp.UserId == userId, Context.ConnectionAborted);
+
+        if (isParticipant)
+        {
+            throw new HubException("Still a participant in this conversation.");
+        }
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, conversationId.ToString());
+    }
 }

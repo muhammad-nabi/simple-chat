@@ -1,0 +1,255 @@
+@use 'styles/tokens' as t;
+@use 'styles/mixins' as m;
+
+.invite-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: t.$z-modal;
+}
+
+.invite-dialog {
+  background-color: t.$color-bg;
+  border-radius: t.$radius-lg;
+  width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: t.$shadow-lg;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$space-lg;
+  border-bottom: 1px solid t.$color-divider;
+
+  h3 {
+    margin: 0;
+    font-size: t.$font-size-body-lg;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+  }
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: t.$color-text-secondary;
+  cursor: pointer;
+  padding: t.$space-xs;
+  line-height: 1;
+
+  &:hover {
+    color: t.$color-text-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+    border-radius: t.$radius-sm;
+  }
+}
+
+.search-container {
+  padding: t.$space-md t.$space-lg;
+}
+
+.search-input {
+  width: 100%;
+  padding: t.$space-sm t.$space-md;
+  border: 1px solid t.$color-divider;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body;
+  color: t.$color-text-primary;
+  background-color: t.$color-surface;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: t.$color-text-secondary;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: t.$color-primary;
+  }
+}
+
+.user-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
+  padding: 0 t.$space-lg;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: t.$space-md;
+  width: 100%;
+  padding: t.$space-md 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid t.$color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: t.$color-surface-hover;
+    margin: 0 #{-(t.$space-lg)};
+    padding-left: t.$space-lg;
+    padding-right: t.$space-lg;
+  }
+
+  &.selected {
+    background-color: rgba(t.$color-primary, 0.08);
+    margin: 0 #{-(t.$space-lg)};
+    padding-left: t.$space-lg;
+    padding-right: t.$space-lg;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: -2px;
+    border-radius: t.$radius-sm;
+  }
+}
+
+.user-name {
+  flex: 1;
+  font-size: t.$font-size-body;
+  color: t.$color-text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkmark {
+  color: t.$color-primary;
+  font-weight: t.$font-weight-semibold;
+}
+
+.empty-state {
+  padding: t.$space-lg;
+  text-align: center;
+  color: t.$color-text-secondary;
+  font-size: t.$font-size-body;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$space-md t.$space-lg;
+  border-top: 1px solid t.$color-divider;
+}
+
+.selected-count {
+  font-size: t.$font-size-body-sm;
+  color: t.$color-text-secondary;
+}
+
+.footer-actions {
+  display: flex;
+  gap: t.$space-sm;
+  margin-left: auto;
+}
+
+.cancel-btn {
+  padding: t.$space-sm t.$space-lg;
+  background: none;
+  color: t.$color-text-secondary;
+  border: 1px solid t.$color-divider;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body;
+  cursor: pointer;
+
+  &:hover {
+    background-color: t.$color-surface-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.invite-btn {
+  padding: t.$space-sm t.$space-lg;
+  background-color: t.$color-primary;
+  color: t.$color-text-inverse;
+  border: none;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body;
+  font-weight: t.$font-weight-medium;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
+// Loading skeleton
+.loading-skeleton {
+  padding: 0 t.$space-lg;
+}
+
+.skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: t.$space-md;
+  padding: t.$space-md 0;
+}
+
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, t.$color-surface 25%, t.$color-surface-hover 50%, t.$color-surface 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 120px;
+  border-radius: t.$radius-sm;
+  background: linear-gradient(90deg, t.$color-surface 25%, t.$color-surface-hover 50%, t.$color-surface 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@include m.reduced-motion {
+  .skeleton-avatar,
+  .skeleton-text {
+    animation: none;
+    background: t.$color-surface-hover;
+  }
+}

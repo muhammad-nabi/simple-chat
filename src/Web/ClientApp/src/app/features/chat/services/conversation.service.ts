@@ -1,6 +1,7 @@
 import { Injectable, inject, DestroyRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Conversation } from '../models/conversation.model';
 import { SignalRService } from '../../../core/signalr/signalr.service';
 import { MessagePayload } from '../../../core/signalr/signalr.events';
@@ -16,6 +17,12 @@ export interface BrowseGroupDto {
   participantCount: number;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
+}
+
+export interface GroupMemberDto {
+  userId: string;
+  displayName: string;
+  joinedAt: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -142,6 +149,37 @@ export class ConversationService {
         this._error$.next('Failed to join group');
       },
     });
+  }
+
+  getGroupMembers(conversationId: number): Observable<GroupMemberDto[]> {
+    return this.http.get<GroupMemberDto[]>(`/api/conversations/${conversationId}/members`);
+  }
+
+  inviteToGroup(conversationId: number, userIds: string[]): Observable<void> {
+    return this.http.post<void>(`/api/conversations/${conversationId}/invite`, { userIds }).pipe(
+      tap(() => {
+        this.loadConversations();
+      }),
+    );
+  }
+
+  leaveGroup(conversationId: number): Observable<void> {
+    return this.http.post<void>(`/api/conversations/${conversationId}/leave`, null).pipe(
+      tap(() => {
+        // Leave SignalR group
+        this.signalRService.leaveConversation(conversationId).catch(() => {
+          // Non-critical — will stop receiving on next reconnect
+        });
+        // Remove from local state
+        const current = this._conversations$.value;
+        this._conversations$.next(current.filter((c: Conversation) => c.id !== conversationId));
+        // Clear selection if leaving current conversation
+        const selected = this._selectedConversation$.value;
+        if (selected && selected.id === conversationId) {
+          this._selectedConversation$.next(null);
+        }
+      }),
+    );
   }
 
   private handleConversationCreated(conversationId: number): void {

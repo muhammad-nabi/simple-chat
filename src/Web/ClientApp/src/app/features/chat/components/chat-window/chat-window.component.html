@@ -2,7 +2,23 @@
   <div class="empty-state">
     <p>Select a conversation</p>
   </div>
-} @else if (loading && messages.length === 0) {
+} @else if (selectedConversation) {
+  @if (isGroupConversation()) {
+    <div class="chat-header">
+      <span class="chat-header-name">{{ selectedConversation.name }}</span>
+      <button
+        class="members-toggle-btn"
+        (click)="toggleMembersPanel()"
+        [class.active]="showMembersPanel"
+        aria-label="Toggle members panel"
+      >
+        Members
+      </button>
+    </div>
+  }
+}
+
+@if (selectedConversation && loading && messages.length === 0) {
   <div class="skeleton-container" aria-busy="true">
     <div class="skeleton-bubble skeleton-left" aria-hidden="true">
       <div class="skeleton-line" style="width: 60%"></div>
@@ -20,7 +36,7 @@
       <div class="skeleton-line" style="width: 55%"></div>
     </div>
   </div>
-} @else if (messages.length === 0 && !loading) {
+} @else if (selectedConversation && messages.length === 0 && !loading) {
   <div class="empty-state empty-state-messages">
     <p>No messages yet — say hello!</p>
   </div>
@@ -57,4 +73,21 @@
       New messages &#8595;
     </button>
   }
+}
+
+@if (showMembersPanel && selectedConversation) {
+  <app-group-members
+    #membersPanel
+    [conversationId]="selectedConversation.id"
+    (inviteRequested)="onInviteRequested()"
+    (leftGroup)="onLeftGroup()"
+    (closed)="onMembersPanelClosed()" />
+}
+
+@if (showInviteDialog && selectedConversation) {
+  <app-invite-to-group
+    [conversationId]="selectedConversation.id"
+    [existingMemberIds]="memberIds"
+    (invited)="onInvited()"
+    (closed)="onInviteClosed()" />
 }

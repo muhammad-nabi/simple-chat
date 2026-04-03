@@ -86,6 +86,13 @@ export class SignalRService {
     await this.connection.invoke('JoinConversation', conversationId);
   }
 
+  async leaveConversation(conversationId: number): Promise<void> {
+    if (!this.connection) {
+      throw new Error('SignalR connection not established.');
+    }
+    await this.connection.invoke('LeaveConversation', conversationId);
+  }
+
   private registerEventHandlers(): void {
     if (!this.connection) {
       return;

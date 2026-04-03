@@ -150,3 +150,12 @@
 - Null ordering instability in `GetBrowseGroupsQueryHandler` — groups with null `LastMessageAt` sort unpredictably; edge case for newly created groups with no messages
 - No error state display in browse groups UI — API failure shows empty list instead of error message; low impact UX polish item
 - No SignalR broadcast for "joined the group" system message — no domain event or MediatR notification published; same gap as "created the group" deferred from story 4-2
+
+## Deferred from: code review of 4-4-invite-users-leave-group (2026-04-03)
+
+- Invited user never joins SignalR group in current session — no mechanism to add invited user's active connection to SignalR group; pre-existing pattern (no domain event broadcast for V1); user must reconnect to receive real-time messages
+- InviteToGroup validates user existence with N+1 identity service calls — `UserExistsAsync` called per user in a loop; batch API would reduce round-trips; performance optimization for large invite lists
+- Concurrent double-leave can create duplicate system messages — no unique constraint on (ConversationId, UserId) removal; same deferred pattern as join race in story 4-3
+- Invite picker uses stale existingMemberIds snapshot — member list captured when panel opens, not refreshed when invite dialog opens; backend silently filters already-participants so no data corruption
+- GetGroupMembers has no pagination — loads all participants unbounded; acceptable for small groups, revisit if group sizes grow
+- Leave system message SenderId set to leaving user's ID instead of null/sentinel — display uses Content string not SenderId for system messages; cosmetic inconsistency

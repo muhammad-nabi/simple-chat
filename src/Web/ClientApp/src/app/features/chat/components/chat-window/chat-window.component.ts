@@ -3,6 +3,8 @@ import { AsyncPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { pairwise, startWith } from 'rxjs/operators';
 import { MessageBubbleComponent } from '../message-bubble/message-bubble.component';
+import { GroupMembersComponent } from '../group-members/group-members.component';
+import { InviteToGroupComponent } from '../invite-to-group/invite-to-group.component';
 import { MessageService } from '../../services/message.service';
 import { ConversationService } from '../../services/conversation.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -13,7 +15,7 @@ import { Conversation } from '../../models/conversation.model';
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [AsyncPipe, MessageBubbleComponent],
+  imports: [AsyncPipe, MessageBubbleComponent, GroupMembersComponent, InviteToGroupComponent],
   templateUrl: './chat-window.component.html',
   styleUrl: './chat-window.component.scss',
 })
@@ -24,6 +26,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   private readonly signalRService = inject(SignalRService);
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('membersPanel') membersPanel!: GroupMembersComponent;
 
   messages: Message[] = [];
   loading = false;
@@ -31,6 +34,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   hasMore = false;
   hasNewMessages = false;
   selectedConversation: Conversation | null = null;
+  showMembersPanel = false;
+  showInviteDialog = false;
+  memberIds: string[] = [];
 
   private currentUserId: string | null = null;
   private shouldScrollToBottom = false;
@@ -222,6 +228,41 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   trackByMessageId(_index: number, message: Message): number {
     return message.id;
+  }
+
+  toggleMembersPanel(): void {
+    this.showMembersPanel = !this.showMembersPanel;
+    if (!this.showMembersPanel) {
+      this.showInviteDialog = false;
+    }
+  }
+
+  onInviteRequested(): void {
+    if (this.membersPanel) {
+      this.memberIds = this.membersPanel.getMemberIds();
+    }
+    this.showInviteDialog = true;
+  }
+
+  onLeftGroup(): void {
+    this.showMembersPanel = false;
+    this.showInviteDialog = false;
+  }
+
+  onMembersPanelClosed(): void {
+    this.showMembersPanel = false;
+    this.showInviteDialog = false;
+  }
+
+  onInvited(): void {
+    this.showInviteDialog = false;
+    if (this.membersPanel) {
+      this.membersPanel.loadMembers();
+    }
+  }
+
+  onInviteClosed(): void {
+    this.showInviteDialog = false;
   }
 
   private isNearBottom(): boolean {

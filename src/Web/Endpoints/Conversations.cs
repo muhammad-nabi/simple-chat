@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using SimpleChat.Application.Messaging.Commands.CreateConversation;
+using SimpleChat.Application.Messaging.Commands.InviteToGroup;
 using SimpleChat.Application.Messaging.Commands.JoinGroup;
+using SimpleChat.Application.Messaging.Commands.LeaveGroup;
 using SimpleChat.Application.Messaging.Commands.SendMessage;
 using SimpleChat.Application.Messaging.Queries.GetBrowseGroups;
 using SimpleChat.Application.Messaging.Queries.GetConversations;
+using SimpleChat.Application.Messaging.Queries.GetGroupMembers;
 using SimpleChat.Application.Messaging.Queries.GetMessageHistory;
 
 namespace SimpleChat.Web.Endpoints;
@@ -24,6 +27,15 @@ public class Conversations : IEndpointGroup
             .RequireAuthorization();
 
         groupBuilder.MapPost(JoinGroup, "{conversationId:long}/join")
+            .RequireAuthorization();
+
+        groupBuilder.MapGet(GetGroupMembers, "{conversationId:long}/members")
+            .RequireAuthorization();
+
+        groupBuilder.MapPost(InviteToGroup, "{conversationId:long}/invite")
+            .RequireAuthorization();
+
+        groupBuilder.MapPost(LeaveGroup, "{conversationId:long}/leave")
             .RequireAuthorization();
 
         groupBuilder.MapPost(SendMessage, "{conversationId:long}/messages")
@@ -66,6 +78,31 @@ public class Conversations : IEndpointGroup
         return TypedResults.Ok(new CreateConversationResponse(id));
     }
 
+    public static async Task<Ok<List<GroupMemberDto>>> GetGroupMembers(
+        ISender sender,
+        long conversationId)
+    {
+        List<GroupMemberDto> members = await sender.Send(new GetGroupMembersQuery(conversationId));
+        return TypedResults.Ok(members);
+    }
+
+    public static async Task<Ok> InviteToGroup(
+        ISender sender,
+        long conversationId,
+        InviteRequest request)
+    {
+        await sender.Send(new InviteToGroupCommand(conversationId, request.UserIds));
+        return TypedResults.Ok();
+    }
+
+    public static async Task<Ok> LeaveGroup(
+        ISender sender,
+        long conversationId)
+    {
+        await sender.Send(new LeaveGroupCommand(conversationId));
+        return TypedResults.Ok();
+    }
+
     public static async Task<Ok<SendMessageResponse>> SendMessage(
         ISender sender,
         long conversationId,
@@ -92,5 +129,6 @@ public record CreateConversationRequest(
     List<string>? ParticipantIds = null,
     string? GroupName = null);
 public record CreateConversationResponse(long Id);
+public record InviteRequest(List<string> UserIds);
 public record SendMessageRequest(string Content);
 public record SendMessageResponse(long Id);

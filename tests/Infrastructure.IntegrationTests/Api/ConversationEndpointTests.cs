@@ -684,6 +684,321 @@ public class ConversationEndpointTests
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
+    // --- Get Group Members Tests ---
+
+    [Test]
+    public async Task GetGroupMembers_ReturnsAllMembers()
+    {
+        // Arrange — user1 creates a group with user2 and user3
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync($"/api/conversations/{groupId}/members");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement members = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(members.GetArrayLength(), Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task GetGroupMembers_NonParticipant_Returns403()
+    {
+        // Arrange — user1 creates a group with user2 and user4, user3 is not in it
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Private Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — user3 tries to get members
+        SetAuth(token3);
+        HttpResponseMessage response = await _client.GetAsync($"/api/conversations/{groupId}/members");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task GetGroupMembers_Unauthenticated_Returns401()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations/1/members");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    // --- Invite to Group Tests ---
+
+    [Test]
+    public async Task InviteToGroup_AddsUsersAndCreatesSystemMessages()
+    {
+        // Arrange — user1 creates a group with user2 and user4, then invites user3
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — invite user3
+        HttpResponseMessage inviteResponse = await _client.PostAsJsonAsync(
+            $"/api/conversations/{groupId}/invite",
+            new { userIds = new[] { user3Id } });
+
+        // Assert — invite succeeds
+        Assert.That(inviteResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Verify user3 appears in members (user1 + user2 + user4 + user3 = 4)
+        HttpResponseMessage membersResponse = await _client.GetAsync($"/api/conversations/{groupId}/members");
+        JsonElement members = await membersResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(members.GetArrayLength(), Is.EqualTo(4));
+
+        // Verify system message was created
+        HttpResponseMessage historyResponse = await _client.GetAsync($"/api/conversations/{groupId}/messages");
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement messages = historyBody.GetProperty("messages");
+        bool hasAddedMessage = false;
+        foreach (JsonElement msg in messages.EnumerateArray())
+        {
+            if (msg.GetProperty("content").GetString()?.Contains("added") == true)
+            {
+                hasAddedMessage = true;
+                break;
+            }
+        }
+        Assert.That(hasAddedMessage, Is.True);
+    }
+
+    [Test]
+    public async Task InviteToGroup_PrivateConversation_Returns403()
+    {
+        // Arrange — create private conversation
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        long privateConvId = await CreateConversation(user2Id);
+
+        // Act — try to invite user3 to private conversation
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"/api/conversations/{privateConvId}/invite",
+            new { userIds = new[] { user3Id } });
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task InviteToGroup_NonParticipant_Returns403()
+    {
+        // Arrange — user1 creates a group with user2 and user5, user3 tries to invite user4
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        string user5Id = await RegisterAndGetUserId("user5@test.com", "User Five");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user5Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — user3 (not in group) tries to invite user4
+        SetAuth(token3);
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"/api/conversations/{groupId}/invite",
+            new { userIds = new[] { user4Id } });
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task InviteToGroup_Unauthenticated_Returns401()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            "/api/conversations/1/invite",
+            new { userIds = new[] { "user-1" } });
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    // --- Leave Group Tests ---
+
+    [Test]
+    public async Task LeaveGroup_RemovesUserAndCreatesSystemMessage()
+    {
+        // Arrange — user1 creates a group with user2 and user3, user2 leaves
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Login as user2 to leave
+        HttpResponseMessage loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email = "user2@test.com", password = "password123" });
+        JsonElement loginBody = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string token2Actual = loginBody.GetProperty("accessToken").GetString()!;
+
+        // Act — user2 leaves the group
+        SetAuth(token2Actual);
+        HttpResponseMessage leaveResponse = await _client.PostAsync(
+            $"/api/conversations/{groupId}/leave", null);
+
+        // Assert — leave succeeds
+        Assert.That(leaveResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Verify user2 no longer in members (check from user1's perspective)
+        SetAuth(token1);
+        HttpResponseMessage membersResponse = await _client.GetAsync($"/api/conversations/{groupId}/members");
+        JsonElement members = await membersResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(members.GetArrayLength(), Is.EqualTo(2)); // user1 + user3
+
+        // Verify system message was created
+        HttpResponseMessage historyResponse = await _client.GetAsync($"/api/conversations/{groupId}/messages");
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement messages = historyBody.GetProperty("messages");
+        bool hasLeftMessage = false;
+        foreach (JsonElement msg in messages.EnumerateArray())
+        {
+            if (msg.GetProperty("content").GetString()?.Contains("left the group") == true)
+            {
+                hasLeftMessage = true;
+                break;
+            }
+        }
+        Assert.That(hasLeftMessage, Is.True);
+    }
+
+    [Test]
+    public async Task LeaveGroup_LastParticipant_PreservesConversation()
+    {
+        // Arrange — user1 creates a group with user2 and user4
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Temp Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // User2 leaves
+        HttpResponseMessage loginResponse2 = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email = "user2@test.com", password = "password123" });
+        JsonElement loginBody2 = await loginResponse2.Content.ReadFromJsonAsync<JsonElement>();
+        SetAuth(loginBody2.GetProperty("accessToken").GetString()!);
+        await _client.PostAsync($"/api/conversations/{groupId}/leave", null);
+
+        // User4 leaves
+        HttpResponseMessage loginResponse4 = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email = "user4@test.com", password = "password123" });
+        JsonElement loginBody4 = await loginResponse4.Content.ReadFromJsonAsync<JsonElement>();
+        SetAuth(loginBody4.GetProperty("accessToken").GetString()!);
+        await _client.PostAsync($"/api/conversations/{groupId}/leave", null);
+
+        // User1 leaves (last participant)
+        SetAuth(token1);
+        HttpResponseMessage leaveResponse = await _client.PostAsync(
+            $"/api/conversations/{groupId}/leave", null);
+        Assert.That(leaveResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Act — register new user and check browse groups — the empty group should still exist
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        SetAuth(token3);
+        HttpResponseMessage browseResponse = await _client.GetAsync("/api/conversations/browse");
+        JsonElement browseBody = await browseResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert — the group should still exist in browse
+        Assert.That(browseBody.GetArrayLength(), Is.GreaterThanOrEqualTo(1));
+        bool foundGroup = false;
+        foreach (JsonElement group in browseBody.EnumerateArray())
+        {
+            if (group.GetProperty("name").GetString() == "Temp Team")
+            {
+                foundGroup = true;
+                break;
+            }
+        }
+        Assert.That(foundGroup, Is.True);
+    }
+
+    [Test]
+    public async Task LeaveGroup_PrivateConversation_Returns403()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        SetAuth(token1);
+
+        long privateConvId = await CreateConversation(user2Id);
+
+        // Act — try to leave private conversation
+        HttpResponseMessage response = await _client.PostAsync(
+            $"/api/conversations/{privateConvId}/leave", null);
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task LeaveGroup_NonParticipant_Returns403()
+    {
+        // Arrange — user1 creates a group with user2 and user4, user3 tries to leave
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — user3 (not in group) tries to leave
+        SetAuth(token3);
+        HttpResponseMessage response = await _client.PostAsync(
+            $"/api/conversations/{groupId}/leave", null);
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task LeaveGroup_Unauthenticated_Returns401()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        HttpResponseMessage response = await _client.PostAsync(
+            "/api/conversations/1/leave", null);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
     // --- Helper Methods ---
 
     private async Task<string> RegisterAndLogin(string email, string displayName)
