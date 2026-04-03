@@ -7,7 +7,7 @@ import { TeamMember } from '../../models/user.model';
 import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 import { UnreadBadgeComponent } from '../../../../shared/components/unread-badge/unread-badge.component';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
-import { NewChatDialogComponent } from '../new-chat-dialog/new-chat-dialog.component';
+import { NewChatDialogComponent, GroupCreationResult } from '../new-chat-dialog/new-chat-dialog.component';
 
 @Component({
   selector: 'app-conversation-list',
@@ -76,6 +76,10 @@ export class ConversationListComponent implements OnInit, OnDestroy {
 
   onNewChatUserSelected(member: TeamMember): void {
     this.conversationService.createConversation(member.userId);
+  }
+
+  onNewChatGroupCreated(result: GroupCreationResult): void {
+    this.conversationService.createGroupConversation(result.participantIds, result.groupName);
   }
 
   onNewChatClosed(): void {

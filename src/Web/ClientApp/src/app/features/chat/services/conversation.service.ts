@@ -82,29 +82,45 @@ export class ConversationService {
     this._error$.next(null);
     this.http.post<CreateConversationResponse>('/api/conversations', { otherUserId }).subscribe({
       next: (response: CreateConversationResponse) => {
-        // Join SignalR group for the new conversation
-        this.signalRService.joinConversation(response.id).catch(() => {
-          // Non-critical — messages may not arrive in real-time until reconnect
-        });
-        // Reload conversations, then select the new one
-        this.http.get<Conversation[]>('/api/conversations').subscribe({
-          next: (conversations: Conversation[]) => {
-            this._conversations$.next(conversations);
-            const created = conversations.find((c: Conversation) => c.id === response.id);
-            if (created) {
-              this._selectedConversation$.next(created);
-            }
-            this._conversationCreated$.next(response.id);
-          },
-          error: () => {
-            // Conversations failed to reload — still emit so dialog closes, but warn
-            this._error$.next('Conversation created but failed to refresh list');
-            this._conversationCreated$.next(response.id);
-          },
-        });
+        this.handleConversationCreated(response.id);
       },
       error: () => {
         this._error$.next('Failed to create conversation');
+      },
+    });
+  }
+
+  createGroupConversation(participantIds: string[], groupName: string): void {
+    this._error$.next(null);
+    this.http.post<CreateConversationResponse>('/api/conversations', { participantIds, groupName }).subscribe({
+      next: (response: CreateConversationResponse) => {
+        this.handleConversationCreated(response.id);
+      },
+      error: () => {
+        this._error$.next('Failed to create group conversation');
+      },
+    });
+  }
+
+  private handleConversationCreated(conversationId: number): void {
+    // Join SignalR group for the new conversation
+    this.signalRService.joinConversation(conversationId).catch(() => {
+      // Non-critical — messages may not arrive in real-time until reconnect
+    });
+    // Reload conversations, then select the new one
+    this.http.get<Conversation[]>('/api/conversations').subscribe({
+      next: (conversations: Conversation[]) => {
+        this._conversations$.next(conversations);
+        const created = conversations.find((c: Conversation) => c.id === conversationId);
+        if (created) {
+          this._selectedConversation$.next(created);
+        }
+        this._conversationCreated$.next(conversationId);
+      },
+      error: () => {
+        // Conversations failed to reload — still emit so dialog closes, but warn
+        this._error$.next('Conversation created but failed to refresh list');
+        this._conversationCreated$.next(conversationId);
       },
     });
   }

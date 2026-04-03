@@ -127,3 +127,9 @@
 ## Deferred from: code review of story-3.9 (2026-04-02)
 
 - `loadConversations()` has no in-flight request cancellation [conversation.service.ts:51-64] — unlike MessageService.loadMessages() which cancels prior requests, loadConversations() creates overlapping HTTP subscriptions on rapid reconnects; pre-existing pattern (see also story 3.5 deferred item)
+
+## Deferred from: code review of 4-1-group-conversation-creation (2026-04-03)
+
+- Mutable `List<string>` in record command (`CreateConversationCommand.ParticipantIds`) should be `IReadOnlyList<string>` — breaks record value semantics; pre-existing pattern across codebase commands
+- No group conversation duplicate check — unlike private conversations, groups with identical name and members can be created repeatedly; acceptable for MVP, revisit if user feedback indicates issue
+- No loading/spinner state on Create Group button during submission — spec calls for "Loading state on submit (spinner in button)" but risk is low since dialog closes on success; add as UX polish pass

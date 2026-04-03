@@ -224,6 +224,112 @@ public class ConversationEndpointTests
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
+    // --- Group Conversation Tests ---
+
+    [Test]
+    public async Task CreateGroupConversation_WithValidData_ReturnsOkWithId()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Engineering Team" });
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetProperty("id").GetInt64(), Is.GreaterThan(0));
+    }
+
+    [Test]
+    public async Task CreateGroupConversation_AppearsInConversationList()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Engineering Team" });
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(1));
+
+        JsonElement conv = body[0];
+        Assert.That(conv.GetProperty("type").GetString(), Is.EqualTo("Group"));
+        Assert.That(conv.GetProperty("name").GetString(), Is.EqualTo("Engineering Team"));
+        Assert.That(conv.GetProperty("otherParticipants").GetArrayLength(), Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task CreateGroupConversation_VisibleToAllParticipants()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+
+        // User 2 needs a token too
+        HttpResponseMessage loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email = "user2@test.com", password = "password123" });
+        loginResponse.EnsureSuccessStatusCode();
+        JsonElement loginBody = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string token2 = loginBody.GetProperty("accessToken").GetString()!;
+
+        // Get user3 ID
+        SetAuth(token3);
+        HttpResponseMessage user3Response = await _client.GetAsync("/api/conversations");
+        user3Response.EnsureSuccessStatusCode();
+
+        // Retrieve user3 ID from the registration step — we need to extract it differently
+        // User3 was registered via RegisterAndLogin, get their userId
+        SetAuth(token1);
+
+        // Create group (user1 creates with user2 and user3)
+        // First get user3's ID by registering fresh
+        string user3Id = await GetUserIdFromLogin("user3@test.com", "password123");
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Team Chat" });
+        createResponse.EnsureSuccessStatusCode();
+
+        // Act — check user2 can see the group
+        SetAuth(token2);
+        HttpResponseMessage response2 = await _client.GetAsync("/api/conversations");
+        JsonElement body2 = await response2.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert
+        Assert.That(body2.GetArrayLength(), Is.EqualTo(1));
+        Assert.That(body2[0].GetProperty("name").GetString(), Is.EqualTo("Team Chat"));
+    }
+
+    [Test]
+    public async Task CreateGroupConversation_NoGroupName_Returns400()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        // Act — missing groupName
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id } });
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+    }
+
     // --- Auth Tests ---
 
     [Test]
@@ -332,6 +438,16 @@ public class ConversationEndpointTests
 
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("id").GetInt64();
+    }
+
+    private async Task<string> GetUserIdFromLogin(string email, string password)
+    {
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/login",
+            new { email, password });
+        response.EnsureSuccessStatusCode();
+
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("userId").GetString()!;
     }
 
     private async Task<long> SendMessage(long conversationId, string content)

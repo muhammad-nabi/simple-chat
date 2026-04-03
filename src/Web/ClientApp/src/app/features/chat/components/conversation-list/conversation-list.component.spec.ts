@@ -49,6 +49,7 @@ describe('ConversationListComponent', () => {
       loadConversations: jest.fn(),
       selectConversation: jest.fn(),
       createConversation: jest.fn(),
+      createGroupConversation: jest.fn(),
       getDisplayName: jest.fn((c: Conversation) =>
         c.type === 'Private' ? c.otherParticipants[0]?.displayName ?? 'Unknown' : c.name ?? 'Conversation'
       ),
@@ -259,5 +260,37 @@ describe('ConversationListComponent', () => {
     fixture.detectChanges();
 
     expect(component.showNewChatDialog).toBe(false);
+  });
+
+  it('should call createGroupConversation when group is created', () => {
+    fixture.detectChanges();
+    component.onNewChatGroupCreated({
+      participantIds: ['user-2', 'user-3'],
+      groupName: 'Engineering Team',
+    });
+    expect(mockConversationService.createGroupConversation).toHaveBeenCalledWith(
+      ['user-2', 'user-3'],
+      'Engineering Team'
+    );
+  });
+
+  it('should display group conversation name', () => {
+    const groupConv: Conversation = {
+      id: 10,
+      type: 'Group',
+      name: 'Engineering Team',
+      lastMessagePreview: 'Welcome!',
+      lastMessageAt: '2026-04-03T12:00:00Z',
+      otherParticipants: [
+        { userId: 'user-2', displayName: 'Bob' },
+        { userId: 'user-3', displayName: 'Charlie' },
+      ],
+      unreadCount: 0,
+    };
+    conversationsSubject.next([groupConv]);
+    fixture.detectChanges();
+
+    const names = fixture.nativeElement.querySelectorAll('.conversation-name');
+    expect(names[0].textContent.trim()).toBe('Engineering Team');
   });
 });

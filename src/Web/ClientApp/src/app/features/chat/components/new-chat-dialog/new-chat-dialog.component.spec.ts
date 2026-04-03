@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BehaviorSubject } from 'rxjs';
-import { NewChatDialogComponent } from './new-chat-dialog.component';
+import { NewChatDialogComponent, GroupCreationResult } from './new-chat-dialog.component';
 import { UserService } from '../../services/user.service';
 import { TeamMember } from '../../models/user.model';
 
@@ -139,18 +139,174 @@ describe('NewChatDialogComponent', () => {
     expect(items.length).toBe(3);
   });
 
-  it('should emit userSelected when member is clicked', () => {
+  it('should toggle member selection on click', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    expect(component.selectedMembers.length).toBe(1);
+    expect(component.selectedMembers[0].userId).toBe('user-2');
+
+    // Toggle off
+    component.selectMember(mockMembers[0]);
+    expect(component.selectedMembers.length).toBe(0);
+  });
+
+  it('should show selected chips when members are selected', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+
+    const chips = fixture.nativeElement.querySelectorAll('.chip');
+    expect(chips.length).toBe(2);
+    expect(chips[0].textContent).toContain('Alice Johnson');
+    expect(chips[1].textContent).toContain('Bob Smith');
+  });
+
+  it('should remove selected member when chip remove button clicked', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+
+    component.removeSelectedMember(mockMembers[0]);
+    fixture.detectChanges();
+
+    expect(component.selectedMembers.length).toBe(1);
+    expect(component.selectedMembers[0].userId).toBe('user-3');
+  });
+
+  it('should show group name input when more than 1 member selected', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.group-name-section')).toBeFalsy();
+
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.group-name-section')).toBeTruthy();
+  });
+
+  it('should show group name label', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+
+    const label = fixture.nativeElement.querySelector('.group-name-label');
+    expect(label.textContent.trim()).toBe('Group Name');
+  });
+
+  it('should disable Create Group button when group name is empty', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('.start-button');
+    expect(button.disabled).toBe(true);
+  });
+
+  it('should enable Create Group button when group name is valid', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    component.groupForm.controls['groupName'].setValue('Test Group');
+    component.groupForm.controls['groupName'].markAsTouched();
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('.start-button');
+    expect(button.disabled).toBe(false);
+  });
+
+  it('should show Start Chat button for single selection', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('.start-button');
+    expect(button.textContent.trim()).toContain('Start Chat');
+  });
+
+  it('should show Create Group button for multi-selection', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('.start-button');
+    expect(button.textContent.trim()).toContain('Create Group');
+  });
+
+  it('should emit userSelected when single member start chat clicked', () => {
     teamMembersSubject.next(mockMembers);
     fixture.detectChanges();
 
     const emitted: TeamMember[] = [];
     component.userSelected.subscribe((m: TeamMember) => emitted.push(m));
 
-    const items = fixture.nativeElement.querySelectorAll('.member-item');
-    items[0].click();
+    component.selectMember(mockMembers[0]);
+    component.startConversation();
 
     expect(emitted.length).toBe(1);
     expect(emitted[0].userId).toBe('user-2');
+  });
+
+  it('should emit groupCreated when group creation submitted', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    const emitted: GroupCreationResult[] = [];
+    component.groupCreated.subscribe((r: GroupCreationResult) => emitted.push(r));
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    component.groupForm.controls['groupName'].setValue('Engineering Team');
+    component.startConversation();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].participantIds).toEqual(['user-2', 'user-3']);
+    expect(emitted[0].groupName).toBe('Engineering Team');
+  });
+
+  it('should show check mark for selected members', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    fixture.detectChanges();
+
+    const checkMarks = fixture.nativeElement.querySelectorAll('.check-mark');
+    expect(checkMarks.length).toBe(1);
+  });
+
+  it('should mark member item as selected', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    fixture.detectChanges();
+
+    const items = fixture.nativeElement.querySelectorAll('.member-item');
+    expect(items[0].classList.contains('selected')).toBe(true);
+    expect(items[1].classList.contains('selected')).toBe(false);
   });
 
   it('should emit closed when close button clicked', () => {
@@ -229,29 +385,23 @@ describe('NewChatDialogComponent', () => {
     expect(component.activeIndex).toBe(0);
   });
 
-  it('should select member with Enter key when active', () => {
+  it('should toggle member with Enter key when active', () => {
     teamMembersSubject.next(mockMembers);
     fixture.detectChanges();
-
-    const emitted: TeamMember[] = [];
-    component.userSelected.subscribe((m: TeamMember) => emitted.push(m));
 
     component.activeIndex = 1;
     component.onKeyDown(new KeyboardEvent('keydown', { key: 'Enter' }));
 
-    expect(emitted.length).toBe(1);
-    expect(emitted[0].userId).toBe('user-3');
+    expect(component.selectedMembers.length).toBe(1);
+    expect(component.selectedMembers[0].userId).toBe('user-3');
   });
 
   it('should not select on Enter when no active index', () => {
     teamMembersSubject.next(mockMembers);
     fixture.detectChanges();
 
-    const emitted: TeamMember[] = [];
-    component.userSelected.subscribe((m: TeamMember) => emitted.push(m));
-
     component.onKeyDown(new KeyboardEvent('keydown', { key: 'Enter' }));
-    expect(emitted.length).toBe(0);
+    expect(component.selectedMembers.length).toBe(0);
   });
 
   it('should reset activeIndex on filter change', () => {
@@ -263,6 +413,21 @@ describe('NewChatDialogComponent', () => {
     component.onFilterChange();
 
     expect(component.activeIndex).toBe(-1);
+  });
+
+  it('should remove last selected member on Backspace when filter is empty', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    component.selectMember(mockMembers[0]);
+    component.selectMember(mockMembers[1]);
+    expect(component.selectedMembers.length).toBe(2);
+
+    component.filterText = '';
+    component.onKeyDown(new KeyboardEvent('keydown', { key: 'Backspace' }));
+
+    expect(component.selectedMembers.length).toBe(1);
+    expect(component.selectedMembers[0].userId).toBe('user-2');
   });
 
   it('should show error state', () => {
@@ -296,5 +461,21 @@ describe('NewChatDialogComponent', () => {
     component.activeIndex = 2;
     component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     expect(component.activeIndex).toBe(2); // stays at last
+  });
+
+  it('should validate group name max length', () => {
+    const longName = 'A'.repeat(101);
+    component.groupForm.controls['groupName'].setValue(longName);
+    component.groupForm.controls['groupName'].markAsTouched();
+
+    expect(component.groupForm.controls['groupName'].valid).toBe(false);
+  });
+
+  it('should not show footer when no members selected', () => {
+    teamMembersSubject.next(mockMembers);
+    fixture.detectChanges();
+
+    const footer = fixture.nativeElement.querySelector('.dialog-footer');
+    expect(footer).toBeFalsy();
   });
 });

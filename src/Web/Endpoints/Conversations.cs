@@ -36,7 +36,10 @@ public class Conversations : IEndpointGroup
         ISender sender,
         CreateConversationRequest request)
     {
-        long id = await sender.Send(new CreateConversationCommand(request.OtherUserId));
+        long id = await sender.Send(new CreateConversationCommand(
+            OtherUserId: request.OtherUserId,
+            ParticipantIds: request.ParticipantIds,
+            GroupName: request.GroupName));
         return TypedResults.Ok(new CreateConversationResponse(id));
     }
 
@@ -61,7 +64,10 @@ public class Conversations : IEndpointGroup
     }
 }
 
-public record CreateConversationRequest(string OtherUserId);
+public record CreateConversationRequest(
+    string? OtherUserId = null,
+    List<string>? ParticipantIds = null,
+    string? GroupName = null);
 public record CreateConversationResponse(long Id);
 public record SendMessageRequest(string Content);
 public record SendMessageResponse(long Id);

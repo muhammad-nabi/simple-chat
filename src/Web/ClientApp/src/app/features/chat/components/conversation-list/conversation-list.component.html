@@ -64,5 +64,6 @@
 @if (showNewChatDialog) {
   <app-new-chat-dialog
     (userSelected)="onNewChatUserSelected($event)"
+    (groupCreated)="onNewChatGroupCreated($event)"
     (closed)="onNewChatClosed()" />
 }
