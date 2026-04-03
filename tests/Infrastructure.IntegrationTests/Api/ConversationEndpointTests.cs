@@ -330,6 +330,89 @@ public class ConversationEndpointTests
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
+    [Test]
+    public async Task GroupConversation_HasSystemMessageInHistory()
+    {
+        // Arrange — create group conversation
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Dev Team" });
+        createResponse.EnsureSuccessStatusCode();
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long conversationId = createBody.GetProperty("id").GetInt64();
+
+        // Act — get message history (should contain system message from creation)
+        HttpResponseMessage historyResponse = await _client.GetAsync(
+            $"/api/conversations/{conversationId}/messages");
+        historyResponse.EnsureSuccessStatusCode();
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert — system message exists
+        JsonElement messages = historyBody.GetProperty("messages");
+        Assert.That(messages.GetArrayLength(), Is.EqualTo(1));
+        Assert.That(messages[0].GetProperty("messageType").GetString(), Is.EqualTo("System"));
+        Assert.That(messages[0].GetProperty("content").GetString(), Does.Contain("created the group"));
+    }
+
+    [Test]
+    public async Task GroupConversation_SendAndRetrieveMessages()
+    {
+        // Arrange — create group and send messages
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "Dev Team" });
+        createResponse.EnsureSuccessStatusCode();
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long conversationId = createBody.GetProperty("id").GetInt64();
+
+        // Act — send a text message and retrieve history
+        await SendMessage(conversationId, "Hello team!");
+        HttpResponseMessage historyResponse = await _client.GetAsync(
+            $"/api/conversations/{conversationId}/messages");
+        historyResponse.EnsureSuccessStatusCode();
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert — system message + text message
+        JsonElement messages = historyBody.GetProperty("messages");
+        Assert.That(messages.GetArrayLength(), Is.EqualTo(2));
+
+        // Messages are in descending order (newest first)
+        Assert.That(messages[0].GetProperty("messageType").GetString(), Is.EqualTo("Text"));
+        Assert.That(messages[0].GetProperty("content").GetString(), Is.EqualTo("Hello team!"));
+        Assert.That(messages[0].GetProperty("senderDisplayName").GetString(), Is.EqualTo("User One"));
+
+        Assert.That(messages[1].GetProperty("messageType").GetString(), Is.EqualTo("System"));
+    }
+
+    [Test]
+    public async Task PrivateConversation_NoSystemMessageCreated()
+    {
+        // Arrange — create private conversation
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        SetAuth(token1);
+
+        long conversationId = await CreateConversation(user2Id);
+
+        // Act — get message history
+        HttpResponseMessage historyResponse = await _client.GetAsync(
+            $"/api/conversations/{conversationId}/messages");
+        historyResponse.EnsureSuccessStatusCode();
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert — no system message for private conversations
+        JsonElement messages = historyBody.GetProperty("messages");
+        Assert.That(messages.GetArrayLength(), Is.EqualTo(0));
+    }
+
     // --- Auth Tests ---
 
     [Test]

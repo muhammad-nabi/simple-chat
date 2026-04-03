@@ -37,12 +37,16 @@
       </div>
     }
     @for (message of messages; track trackByMessageId($index, message)) {
-      <app-message-bubble
-        [message]="message"
-        [isOwn]="isOwnMessage(message.senderId)"
-        [showSender]="shouldShowSender($index)"
-        [isConsecutive]="isConsecutiveMessage($index)"
-        [isFirstMessage]="message.checkmarkState === 'sent' && isFirstSentMessage()" />
+      @if (isSystemMessage(message)) {
+        <div class="system-message">{{ message.content }}</div>
+      } @else {
+        <app-message-bubble
+          [message]="message"
+          [isOwn]="isOwnMessage(message.senderId)"
+          [showSender]="shouldShowSender($index)"
+          [isConsecutive]="isConsecutiveMessage($index)"
+          [isFirstMessage]="message.checkmarkState === 'sent' && isFirstSentMessage()" />
+      }
     }
   </div>
 

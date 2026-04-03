@@ -133,3 +133,11 @@
 - Mutable `List<string>` in record command (`CreateConversationCommand.ParticipantIds`) should be `IReadOnlyList<string>` — breaks record value semantics; pre-existing pattern across codebase commands
 - No group conversation duplicate check — unlike private conversations, groups with identical name and members can be created repeatedly; acceptable for MVP, revisit if user feedback indicates issue
 - No loading/spinner state on Create Group button during submission — spec calls for "Loading state on submit (spinner in button)" but risk is low since dialog closes on success; add as UX polish pass
+
+## Deferred from: code review of 4-2-group-messaging-history (2026-04-03)
+
+- System message not published via MediatR notification (no real-time delivery to other participants) — becomes relevant when SignalR group-join for non-creators is addressed
+- Non-creator participants don't auto-join SignalR group for new conversations — pre-existing architecture limitation from Epic 3
+- System message appears in `lastMessagePreview` on conversation list sidebar — pre-existing query behavior in GetConversationsQueryHandler
+- No in-flight guard for concurrent create conversation requests — pre-existing pattern, same as deferred in story 3.5 and 3.8
+- System message counted as unread for non-creator participants — `GetConversationsQueryHandler` counts system messages in unread count; defer to Epic 5 (Story 5-3) which overhauls unread logic

@@ -24,6 +24,16 @@ public class CreateConversationCommandHandlerTests
         _identityService = new Mock<IIdentityService>();
         _currentUser.Setup(u => u.Id).Returns("user-1");
         _db.Setup(d => d.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        // Default Messages DbSet for system message creation in group conversations
+        Mock<DbSet<Message>> defaultMessages = CreateMockDbSet(new List<Message>());
+        _db.Setup(d => d.Messages).Returns(defaultMessages.Object);
+
+        // Default display name resolution for system messages
+        _identityService.Setup(s => s.GetDisplayNamesByIdsAsync(
+            It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, string> { { "user-1", "Test User" } });
+
         _handler = new CreateConversationCommandHandler(_db.Object, _currentUser.Object, _identityService.Object);
     }
 
@@ -186,5 +196,57 @@ public class CreateConversationCommandHandlerTests
         // Assert — creator is always added as a participant
         conversationSet.Verify(c => c.Add(It.Is<Conversation>(conv =>
             conv.Participants.Any(p => p.UserId == "user-1"))), Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_GroupConversation_ShouldCreateSystemMessage()
+    {
+        // Arrange
+        CreateConversationCommand command = new(
+            ParticipantIds: new List<string> { "user-2", "user-3" },
+            GroupName: "Engineering Team");
+
+        _identityService.Setup(s => s.UserExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _identityService.Setup(s => s.GetDisplayNamesByIdsAsync(
+            It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, string> { { "user-1", "Alice" } });
+
+        Mock<DbSet<Conversation>> conversationSet = CreateMockDbSet(new List<Conversation>());
+        _db.Setup(d => d.Conversations).Returns(conversationSet.Object);
+
+        Mock<DbSet<Message>> messageSet = CreateMockDbSet(new List<Message>());
+        _db.Setup(d => d.Messages).Returns(messageSet.Object);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert — system message created with correct content
+        messageSet.Verify(m => m.Add(It.Is<Message>(msg =>
+            msg.MessageType == MessageType.System &&
+            msg.Content == "Alice created the group" &&
+            msg.SenderId == "user-1")), Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_PrivateConversation_ShouldNotCreateSystemMessage()
+    {
+        // Arrange
+        CreateConversationCommand command = new(OtherUserId: "user-2");
+        _identityService.Setup(s => s.UserExistsAsync("user-2", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        Mock<DbSet<Conversation>> conversationSet = CreateMockDbSet(new List<Conversation>());
+        _db.Setup(d => d.Conversations).Returns(conversationSet.Object);
+
+        Mock<DbSet<Message>> messageSet = CreateMockDbSet(new List<Message>());
+        _db.Setup(d => d.Messages).Returns(messageSet.Object);
+
+        Mock<DbSet<ConversationParticipant>> participantSet = CreateMockDbSet(new List<ConversationParticipant>());
+        _db.Setup(d => d.ConversationParticipants).Returns(participantSet.Object);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert — no system message for private conversations
+        messageSet.Verify(m => m.Add(It.IsAny<Message>()), Times.Never);
     }
 }

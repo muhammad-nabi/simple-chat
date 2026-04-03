@@ -70,6 +70,18 @@
   }
 }
 
+// System messages — centered gray pill
+.system-message {
+  align-self: center;
+  background-color: t.$color-surface-hover;
+  color: t.$color-text-secondary;
+  font-size: t.$font-size-body-sm;
+  border-radius: t.$radius-full;
+  padding: t.$space-xs t.$space-md;
+  margin: t.$space-sm 0;
+  text-align: center;
+}
+
 // Loading spinner for history
 .loading-spinner {
   display: flex;

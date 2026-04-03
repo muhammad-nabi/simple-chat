@@ -177,18 +177,42 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     return this.messageService.isOwnMessage(senderId);
   }
 
+  isSystemMessage(message: Message): boolean {
+    return message.messageType === 'System';
+  }
+
+  isGroupConversation(): boolean {
+    return this.selectedConversation?.type === 'Group';
+  }
+
   shouldShowSender(index: number): boolean {
+    if (!this.isGroupConversation()) {
+      return false;
+    }
+    const message = this.messages[index];
+    if (message.messageType === 'System') {
+      return false;
+    }
     if (index === 0) {
       return true;
     }
-    return this.messages[index].senderId !== this.messages[index - 1].senderId;
+    const prev = this.messages[index - 1];
+    if (prev.messageType === 'System') {
+      return true;
+    }
+    return message.senderId !== prev.senderId;
   }
 
   isConsecutiveMessage(index: number): boolean {
     if (index === 0) {
       return false;
     }
-    return this.messages[index].senderId === this.messages[index - 1].senderId;
+    const message = this.messages[index];
+    const prev = this.messages[index - 1];
+    if (message.messageType === 'System' || prev.messageType === 'System') {
+      return false;
+    }
+    return message.senderId === prev.senderId;
   }
 
   isFirstSentMessage(): boolean {

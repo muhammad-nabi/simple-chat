@@ -142,7 +142,24 @@ public class CreateConversationCommandHandler : IRequestHandler<CreateConversati
             });
         }
 
+        // Resolve creator display name for system message
+        Dictionary<string, string> displayNames = await _identityService
+            .GetDisplayNamesByIdsAsync(new[] { currentUserId }, cancellationToken);
+        string creatorDisplayName = displayNames.GetValueOrDefault(currentUserId, "Unknown");
+
+        Message systemMessage = new()
+        {
+            Conversation = conversation,
+            SenderId = currentUserId,
+            Content = $"{creatorDisplayName} created the group",
+            SentAt = now,
+            MessageType = MessageType.System,
+        };
+
+        conversation.LastMessageAt = now;
+
         _db.Conversations.Add(conversation);
+        _db.Messages.Add(systemMessage);
         await _db.SaveChangesAsync(cancellationToken);
 
         return conversation.Id;
