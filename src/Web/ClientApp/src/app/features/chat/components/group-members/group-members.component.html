@@ -19,7 +19,7 @@
     <div class="member-list" role="list">
       @for (member of members$ | async; track member.userId) {
         <div class="member-item" role="listitem">
-          <app-avatar [displayName]="member.displayName" [userId]="member.userId" [size]="36"></app-avatar>
+          <app-avatar [displayName]="member.displayName" [userId]="member.userId" size="members"></app-avatar>
           <div class="member-info">
             <span class="member-name">{{ member.displayName }}</span>
             <span class="member-joined">Joined {{ member.joinedAt | relativeTime }}</span>

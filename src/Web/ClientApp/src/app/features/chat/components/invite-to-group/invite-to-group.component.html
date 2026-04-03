@@ -34,7 +34,7 @@
             role="option"
             [attr.aria-selected]="isSelected(user.userId)"
           >
-            <app-avatar [displayName]="user.displayName" [userId]="user.userId" [size]="36"></app-avatar>
+            <app-avatar [displayName]="user.displayName" [userId]="user.userId" size="members"></app-avatar>
             <span class="user-name">{{ user.displayName }}</span>
             @if (isSelected(user.userId)) {
               <span class="checkmark" aria-hidden="true">&#10003;</span>
