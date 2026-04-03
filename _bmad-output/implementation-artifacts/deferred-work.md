@@ -141,3 +141,12 @@
 - System message appears in `lastMessagePreview` on conversation list sidebar — pre-existing query behavior in GetConversationsQueryHandler
 - No in-flight guard for concurrent create conversation requests — pre-existing pattern, same as deferred in story 3.5 and 3.8
 - System message counted as unread for non-creator participants — `GetConversationsQueryHandler` counts system messages in unread count; defer to Epic 5 (Story 5-3) which overhauls unread logic
+
+## Deferred from: code review of 4-3-browse-join-groups (2026-04-03)
+
+- Concurrent join race condition — no DB unique constraint on (ConversationId, UserId); two simultaneous join requests can both pass `alreadyParticipant` check and create duplicate participant rows; requires schema migration to add unique index
+- No pagination on `GetBrowseGroupsQuery` — loads all non-joined group conversations into memory; acceptable for small team app (5-200 users) per spec; revisit if group count grows significantly
+- SignalR join error silently swallowed in `conversation.service.ts` joinGroup() — user won't receive real-time messages until reconnect; pre-existing pattern (same as story 3.9 deferred item)
+- Null ordering instability in `GetBrowseGroupsQueryHandler` — groups with null `LastMessageAt` sort unpredictably; edge case for newly created groups with no messages
+- No error state display in browse groups UI — API failure shows empty list instead of error message; low impact UX polish item
+- No SignalR broadcast for "joined the group" system message — no domain event or MediatR notification published; same gap as "created the group" deferred from story 4-2

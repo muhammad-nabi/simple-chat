@@ -413,6 +413,204 @@ public class ConversationEndpointTests
         Assert.That(messages.GetArrayLength(), Is.EqualTo(0));
     }
 
+    // --- Browse Groups Tests ---
+
+    [Test]
+    public async Task BrowseGroups_ReturnsGroupsUserIsNotIn()
+    {
+        // Arrange — user1 creates a group with user2 and user4, user3 is NOT in it
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Alpha Team" });
+        createResponse.EnsureSuccessStatusCode();
+
+        // Act — user3 browses groups
+        SetAuth(token3);
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations/browse");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(1));
+        Assert.That(body[0].GetProperty("name").GetString(), Is.EqualTo("Alpha Team"));
+        Assert.That(body[0].GetProperty("participantCount").GetInt32(), Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task BrowseGroups_ExcludesGroupsUserIsIn()
+    {
+        // Arrange — user1 creates a group with user2 and user3; user1 should NOT see it in browse
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "My Group" });
+
+        // Act — user1 browses (should see empty list since they're in the only group)
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations/browse");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(body.GetArrayLength(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task BrowseGroups_Unauthenticated_Returns401()
+    {
+        // Act (no auth header)
+        HttpResponseMessage response = await _client.GetAsync("/api/conversations/browse");
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    // --- Join Group Tests ---
+
+    [Test]
+    public async Task JoinGroup_AddsUserAndCreatesSystemMessage()
+    {
+        // Arrange — user1 creates a group with user2 and user4, user3 joins
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Open Group" });
+        createResponse.EnsureSuccessStatusCode();
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — user3 joins the group
+        SetAuth(token3);
+        HttpResponseMessage joinResponse = await _client.PostAsync(
+            $"/api/conversations/{groupId}/join", null);
+
+        // Assert — join succeeds
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Assert — group now appears in user3's conversation list
+        HttpResponseMessage convResponse = await _client.GetAsync("/api/conversations");
+        JsonElement convBody = await convResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.That(convBody.GetArrayLength(), Is.EqualTo(1));
+        Assert.That(convBody[0].GetProperty("name").GetString(), Is.EqualTo("Open Group"));
+
+        // Assert — system message exists in message history
+        HttpResponseMessage historyResponse = await _client.GetAsync(
+            $"/api/conversations/{groupId}/messages");
+        JsonElement historyBody = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement messages = historyBody.GetProperty("messages");
+
+        // Should have 2 messages: "created the group" + "joined the group"
+        Assert.That(messages.GetArrayLength(), Is.EqualTo(2));
+        Assert.That(messages[0].GetProperty("content").GetString(), Does.Contain("joined the group"));
+        Assert.That(messages[0].GetProperty("messageType").GetString(), Is.EqualTo("System"));
+    }
+
+    [Test]
+    public async Task JoinGroup_GroupNoLongerInBrowseList()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        string user4Id = await RegisterAndGetUserId("user4@test.com", "User Four");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user4Id }, groupName = "Team" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // User3 joins
+        SetAuth(token3);
+        await _client.PostAsync($"/api/conversations/{groupId}/join", null);
+
+        // Act — user3 browses groups again
+        HttpResponseMessage browseResponse = await _client.GetAsync("/api/conversations/browse");
+        JsonElement browseBody = await browseResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert — joined group no longer appears
+        Assert.That(browseBody.GetArrayLength(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task JoinGroup_AlreadyMember_Returns403()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string user3Id = await RegisterAndGetUserId("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/api/conversations",
+            new { participantIds = new[] { user2Id, user3Id }, groupName = "My Group" });
+        JsonElement createBody = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        long groupId = createBody.GetProperty("id").GetInt64();
+
+        // Act — user1 tries to join a group they're already in
+        HttpResponseMessage joinResponse = await _client.PostAsync(
+            $"/api/conversations/{groupId}/join", null);
+
+        // Assert
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task JoinGroup_PrivateConversation_Returns403()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        string user2Id = await RegisterAndGetUserId("user2@test.com", "User Two");
+        string token3 = await RegisterAndLogin("user3@test.com", "User Three");
+        SetAuth(token1);
+
+        long privateConvId = await CreateConversation(user2Id);
+
+        // Act — user3 tries to join a private conversation
+        SetAuth(token3);
+        HttpResponseMessage joinResponse = await _client.PostAsync(
+            $"/api/conversations/{privateConvId}/join", null);
+
+        // Assert
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    public async Task JoinGroup_NonExistentConversation_Returns404()
+    {
+        // Arrange
+        string token1 = await RegisterAndLogin("user1@test.com", "User One");
+        SetAuth(token1);
+
+        // Act
+        HttpResponseMessage joinResponse = await _client.PostAsync(
+            "/api/conversations/99999/join", null);
+
+        // Assert
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task JoinGroup_Unauthenticated_Returns401()
+    {
+        // Act (no auth header)
+        HttpResponseMessage response = await _client.PostAsync(
+            "/api/conversations/1/join", null);
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
     // --- Auth Tests ---
 
     [Test]

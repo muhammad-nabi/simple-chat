@@ -9,9 +9,32 @@
 
 .list-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: t.$space-sm t.$space-md;
   border-bottom: 1px solid t.$color-divider;
+}
+
+.browse-groups-button {
+  padding: t.$space-xs t.$space-sm;
+  background: none;
+  border: 1px solid t.$color-divider;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body-sm;
+  font-family: t.$font-family;
+  color: t.$color-primary;
+  cursor: pointer;
+  transition: background-color t.$transition-fast;
+  min-height: 32px;
+
+  &:hover {
+    background-color: t.$color-surface-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
 }
 
 .new-chat-button {

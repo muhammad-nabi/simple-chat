@@ -8,11 +8,12 @@ import { AvatarComponent } from '../../../../shared/components/avatar/avatar.com
 import { UnreadBadgeComponent } from '../../../../shared/components/unread-badge/unread-badge.component';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { NewChatDialogComponent, GroupCreationResult } from '../new-chat-dialog/new-chat-dialog.component';
+import { BrowseGroupsComponent } from '../browse-groups/browse-groups.component';
 
 @Component({
   selector: 'app-conversation-list',
   standalone: true,
-  imports: [AsyncPipe, AvatarComponent, UnreadBadgeComponent, RelativeTimePipe, NewChatDialogComponent],
+  imports: [AsyncPipe, AvatarComponent, UnreadBadgeComponent, RelativeTimePipe, NewChatDialogComponent, BrowseGroupsComponent],
   templateUrl: './conversation-list.component.html',
   styleUrl: './conversation-list.component.scss',
 })
@@ -26,6 +27,7 @@ export class ConversationListComponent implements OnInit, OnDestroy {
   readonly conversationSelected = output<Conversation>();
 
   showNewChatDialog = false;
+  showBrowseGroups = false;
 
   private subscriptions: Subscription[] = [];
 
@@ -84,5 +86,17 @@ export class ConversationListComponent implements OnInit, OnDestroy {
 
   onNewChatClosed(): void {
     this.showNewChatDialog = false;
+  }
+
+  openBrowseGroups(): void {
+    this.showBrowseGroups = true;
+  }
+
+  onGroupJoined(): void {
+    this.showBrowseGroups = false;
+  }
+
+  onBrowseGroupsClosed(): void {
+    this.showBrowseGroups = false;
   }
 }

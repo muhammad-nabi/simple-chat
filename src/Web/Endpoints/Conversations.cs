@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using SimpleChat.Application.Messaging.Commands.CreateConversation;
+using SimpleChat.Application.Messaging.Commands.JoinGroup;
 using SimpleChat.Application.Messaging.Commands.SendMessage;
+using SimpleChat.Application.Messaging.Queries.GetBrowseGroups;
 using SimpleChat.Application.Messaging.Queries.GetConversations;
 using SimpleChat.Application.Messaging.Queries.GetMessageHistory;
 
@@ -15,7 +17,13 @@ public class Conversations : IEndpointGroup
         groupBuilder.MapGet(GetConversations)
             .RequireAuthorization();
 
+        groupBuilder.MapGet(GetBrowseGroups, "browse")
+            .RequireAuthorization();
+
         groupBuilder.MapPost(CreateConversation)
+            .RequireAuthorization();
+
+        groupBuilder.MapPost(JoinGroup, "{conversationId:long}/join")
             .RequireAuthorization();
 
         groupBuilder.MapPost(SendMessage, "{conversationId:long}/messages")
@@ -30,6 +38,21 @@ public class Conversations : IEndpointGroup
     {
         List<ConversationListDto> conversations = await sender.Send(new GetConversationsQuery());
         return TypedResults.Ok(conversations);
+    }
+
+    public static async Task<Ok<List<BrowseGroupDto>>> GetBrowseGroups(
+        ISender sender)
+    {
+        List<BrowseGroupDto> groups = await sender.Send(new GetBrowseGroupsQuery());
+        return TypedResults.Ok(groups);
+    }
+
+    public static async Task<Ok> JoinGroup(
+        ISender sender,
+        long conversationId)
+    {
+        await sender.Send(new JoinGroupCommand(conversationId));
+        return TypedResults.Ok();
     }
 
     public static async Task<Ok<CreateConversationResponse>> CreateConversation(

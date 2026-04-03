@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-28
-last_updated: 2026-04-03
+last_updated: 2026-04-03T12:00:00
 project: simple-chat
 project_key: NOKEY
 tracking_system: file-system
@@ -76,7 +76,7 @@ development_status:
   epic-4: in-progress
   4-1-group-conversation-creation: done
   4-2-group-messaging-history: done
-  4-3-browse-join-groups: backlog
+  4-3-browse-join-groups: done
   4-4-invite-users-leave-group: backlog
   epic-4-retrospective: optional
 

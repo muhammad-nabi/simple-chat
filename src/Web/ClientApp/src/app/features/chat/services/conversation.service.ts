@@ -10,6 +10,14 @@ export interface CreateConversationResponse {
   id: number;
 }
 
+export interface BrowseGroupDto {
+  id: number;
+  name: string;
+  participantCount: number;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConversationService {
   private readonly http = inject(HttpClient);
@@ -98,6 +106,40 @@ export class ConversationService {
       },
       error: () => {
         this._error$.next('Failed to create group conversation');
+      },
+    });
+  }
+
+  loadBrowseGroups(): Observable<BrowseGroupDto[]> {
+    return this.http.get<BrowseGroupDto[]>('/api/conversations/browse');
+  }
+
+  joinGroup(conversationId: number): void {
+    this._error$.next(null);
+    this.http.post(`/api/conversations/${conversationId}/join`, null).subscribe({
+      next: () => {
+        // Join SignalR group for real-time messages immediately
+        this.signalRService.joinConversation(conversationId).catch(() => {
+          // Non-critical — messages may not arrive in real-time until reconnect
+        });
+        // Reload conversations, then select the joined group
+        this.http.get<Conversation[]>('/api/conversations').subscribe({
+          next: (conversations: Conversation[]) => {
+            this._conversations$.next(conversations);
+            const joined = conversations.find((c: Conversation) => c.id === conversationId);
+            if (joined) {
+              this._selectedConversation$.next(joined);
+            }
+            this._conversationCreated$.next(conversationId);
+          },
+          error: () => {
+            this._error$.next('Joined group but failed to refresh list');
+            this._conversationCreated$.next(conversationId);
+          },
+        });
+      },
+      error: () => {
+        this._error$.next('Failed to join group');
       },
     });
   }
