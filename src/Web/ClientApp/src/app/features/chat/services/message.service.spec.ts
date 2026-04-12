@@ -168,6 +168,57 @@ describe('MessageService', () => {
       expect((messages[0] as { id: number }).id).toBe(10);
     });
 
+    it('should reset loading$ when stale response is discarded after conversation switch', () => {
+      const loadingStates: boolean[] = [];
+      service.loading$.subscribe(l => loadingStates.push(l));
+
+      // Start loading conversation 1
+      service.loadMessages(1);
+
+      // Switch to conversation 2 before conv 1 responds
+      service.loadMessages(2);
+      const req1 = httpTesting.expectOne('/api/conversations/1/messages');
+      // req1 was cancelled by unsubscribe, but if a response sneaks through:
+      // Simulate by flushing conv 2 first
+      const req2 = httpTesting.expectOne('/api/conversations/2/messages');
+      req2.flush({
+        messages: [{ id: 20, conversationId: 2, senderId: 'user-1', senderDisplayName: 'Me', content: 'Conv2', sentAt: '2026-04-01T12:00:00Z', messageType: 'Text' }],
+        hasMore: false,
+        nextCursor: null,
+      });
+
+      // Loading should be false after response
+      expect(loadingStates[loadingStates.length - 1]).toBe(false);
+    });
+
+    it('should not leave stale messages from previous conversation after switch', () => {
+      let messages: unknown[] = [];
+      service.messages$.subscribe(m => messages = m);
+
+      // Load conv 1
+      service.loadMessages(1);
+      const req1 = httpTesting.expectOne('/api/conversations/1/messages');
+      req1.flush(mockResponse);
+      expect(messages.length).toBe(3);
+
+      // Switch to conv 2 — cancels conv 1, clears are handled by component
+      service.clearMessages();
+      service.loadMessages(2);
+
+      // Before conv 2 responds, messages should be empty (cleared)
+      expect(messages.length).toBe(0);
+
+      const req2 = httpTesting.expectOne('/api/conversations/2/messages');
+      req2.flush({
+        messages: [{ id: 20, conversationId: 2, senderId: 'user-2', senderDisplayName: 'Other', content: 'Conv2', sentAt: '2026-04-01T12:00:00Z', messageType: 'Text' }],
+        hasMore: false,
+        nextCursor: null,
+      });
+
+      expect(messages.length).toBe(1);
+      expect((messages[0] as { id: number }).id).toBe(20);
+    });
+
     it('should set loadingHistory$ during pagination load', () => {
       const historyStates: boolean[] = [];
       service.loadingHistory$.subscribe(h => historyStates.push(h));

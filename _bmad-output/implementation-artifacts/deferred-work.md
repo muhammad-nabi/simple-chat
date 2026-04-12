@@ -159,3 +159,10 @@
 - Invite picker uses stale existingMemberIds snapshot — member list captured when panel opens, not refreshed when invite dialog opens; backend silently filters already-participants so no data corruption
 - GetGroupMembers has no pagination — loads all participants unbounded; acceptable for small groups, revisit if group sizes grow
 - Leave system message SenderId set to leaving user's ID instead of null/sentinel — display uses Content string not SenderId for system messages; cosmetic inconsistency
+
+## Deferred from: review of spec-fix-message-loading-state (2026-04-12)
+
+- Reconnect handler in chat-window.component.ts calls `loadMessages()` without `clearMessages()` first — `pendingMessageIds` from pre-disconnect optimistic sends not cleared; reconnect-delivered duplicates may be silently dropped
+- `clearMessages()` wipes `firstMessageSent` map for ALL conversations — not scoped to current conversation; `isFirstMessageInConversation()` returns true incorrectly after any conversation switch
+- Same-conversation re-selection triggers unnecessary `clearMessages()` + `loadMessages()` — no `prev.id === current.id` guard in pairwise subscription; causes flash of empty state
+- `clearMessages()` clears `pendingMessageIds` while optimistic-send `.then()` / `.catch()` callbacks are still in-flight — message may appear as duplicate after switching away and back

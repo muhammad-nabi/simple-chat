@@ -170,6 +170,22 @@ describe('ChatWindowComponent', () => {
     expect(mockMessageService['clearMessages']).toHaveBeenCalled();
   });
 
+  it('should clear messages before loading when switching between conversations', () => {
+    const callOrder: string[] = [];
+    (mockMessageService['clearMessages'] as jest.Mock).mockImplementation(() => callOrder.push('clear'));
+    (mockMessageService['loadMessages'] as jest.Mock).mockImplementation(() => callOrder.push('load'));
+
+    selectedConvSubject.next(mockConversation);
+    fixture.detectChanges();
+    callOrder.length = 0; // reset after initial load
+
+    selectedConvSubject.next(mockGroupConversation);
+    fixture.detectChanges();
+
+    expect(callOrder).toEqual(['clear', 'load']);
+    expect(mockMessageService['loadMessages']).toHaveBeenCalledWith(2);
+  });
+
   describe('message grouping', () => {
     it('should not show sender in private conversations', () => {
       component.selectedConversation = mockConversation; // type: 'Private'

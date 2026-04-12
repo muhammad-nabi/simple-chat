@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, inject, ChangeDetectorRef } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { pairwise, startWith } from 'rxjs/operators';
+import { pairwise } from 'rxjs/operators';
 import { MessageBubbleComponent } from '../message-bubble/message-bubble.component';
 import { GroupMembersComponent } from '../group-members/group-members.component';
 import { InviteToGroupComponent } from '../invite-to-group/invite-to-group.component';
@@ -24,6 +24,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   private readonly conversationService = inject(ConversationService);
   private readonly authService = inject(AuthService);
   private readonly signalRService = inject(SignalRService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('membersPanel') membersPanel!: GroupMembersComponent;
@@ -61,10 +62,11 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       }
 
       this.messages = messages;
+      this.cdr.markForCheck();
     });
 
     const loadingSub = this.messageService.loading$.subscribe(
-      (loading: boolean) => this.loading = loading
+      (loading: boolean) => { this.loading = loading; this.cdr.markForCheck(); }
     );
 
     const loadingHistorySub = this.messageService.loadingHistory$.subscribe(
@@ -83,7 +85,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     );
 
     const convSub = this.conversationService.selectedConversation.pipe(
-      startWith(null as Conversation | null),
       pairwise(),
     ).subscribe(([prev, current]) => {
       // Save scroll position of previous conversation
@@ -95,6 +96,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       this.hasNewMessages = false;
 
       if (current) {
+        this.messageService.clearMessages();
         this.messageService.loadMessages(current.id);
         // Restore saved scroll position or scroll to bottom for first visit
         const savedPosition = this.messageService.getScrollPosition(current.id);

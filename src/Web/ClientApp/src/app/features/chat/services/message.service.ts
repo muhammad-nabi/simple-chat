@@ -1,4 +1,4 @@
-import { Injectable, inject, DestroyRef } from '@angular/core';
+import { Injectable, inject, DestroyRef, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
 import { Message, MessageHistoryResponse } from '../models/message.model';
@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Injectable({ providedIn: 'root' })
 export class MessageService {
   private readonly http = inject(HttpClient);
+  private readonly ngZone = inject(NgZone);
   private readonly signalRService = inject(SignalRService);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -71,9 +72,11 @@ export class MessageService {
     }
 
     this.loadSubscription = this.http.get<MessageHistoryResponse>(url).subscribe({
-      next: (response: MessageHistoryResponse) => {
+      next: (response: MessageHistoryResponse) => this.ngZone.run(() => {
         // Guard against stale responses after conversation switch
         if (conversationId !== this.currentConversationId) {
+          this._loading$.next(false);
+          this._loadingHistory$.next(false);
           return;
         }
 
@@ -91,12 +94,12 @@ export class MessageService {
 
         this._hasMore$.next(response.hasMore);
         this._loading$.next(false);
-      },
-      error: () => {
+      }),
+      error: () => this.ngZone.run(() => {
         this._error$.next('Failed to load messages');
         this._loading$.next(false);
         this._loadingHistory$.next(false);
-      },
+      }),
     });
   }
 
