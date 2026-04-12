@@ -177,7 +177,7 @@ describe('MessageService', () => {
 
       // Switch to conversation 2 before conv 1 responds
       service.loadMessages(2);
-      const req1 = httpTesting.expectOne('/api/conversations/1/messages');
+      httpTesting.expectOne('/api/conversations/1/messages');
       // req1 was cancelled by unsubscribe, but if a response sneaks through:
       // Simulate by flushing conv 2 first
       const req2 = httpTesting.expectOne('/api/conversations/2/messages');
