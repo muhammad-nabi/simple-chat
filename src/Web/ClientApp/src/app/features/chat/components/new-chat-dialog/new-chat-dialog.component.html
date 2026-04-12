@@ -12,6 +12,21 @@
       </button>
     </div>
 
+    @if (selectedMembers.length > 0) {
+      <div class="selected-chips" aria-label="Selected members">
+        @for (member of selectedMembers; track member.userId) {
+          <span class="chip">
+            {{ member.displayName }}
+            <button class="chip-remove"
+                    (click)="removeSelectedMember(member)"
+                    [attr.aria-label]="'Remove ' + member.displayName">
+              &#10005;
+            </button>
+          </span>
+        }
+      </div>
+    }
+
     <div class="dialog-filter">
       <input #filterInput
              type="text"
@@ -22,6 +37,23 @@
              aria-label="Filter team members"
              autocomplete="off" />
     </div>
+
+    @if (isGroupMode) {
+      <div class="group-name-section" [formGroup]="groupForm">
+        <label for="groupNameInput" class="group-name-label">Group Name</label>
+        <input id="groupNameInput"
+               type="text"
+               class="group-name-input"
+               formControlName="groupName"
+               placeholder="e.g. Engineering Team"
+               aria-label="Group name"
+               maxlength="100"
+               (keydown)="onGroupNameKeyDown($event)" />
+        @if (groupForm.controls['groupName'].touched && groupForm.controls['groupName'].invalid) {
+          <span class="validation-error" role="alert">Please enter a valid group name</span>
+        }
+      </div>
+    }
 
     <div class="dialog-body">
       @if (loading$ | async) {
@@ -43,8 +75,9 @@
             <div #memberItem class="member-item"
                  role="option"
                  tabindex="0"
-                 [attr.aria-selected]="i === activeIndex"
+                 [attr.aria-selected]="isMemberSelected(member)"
                  [class.active]="i === activeIndex"
+                 [class.selected]="isMemberSelected(member)"
                  (click)="selectMember(member)"
                  (keydown.enter)="selectMember(member); $event.stopPropagation()">
               <app-avatar
@@ -52,6 +85,9 @@
                 [userId]="member.userId"
                 size="members" />
               <span class="member-name">{{ member.displayName }}</span>
+              @if (isMemberSelected(member)) {
+                <span class="check-mark" aria-hidden="true">&#10003;</span>
+              }
             </div>
           } @empty {
             <div class="empty-filter">
@@ -61,5 +97,20 @@
         </div>
       }
     </div>
+
+    @if (selectedMembers.length > 0) {
+      <div class="dialog-footer">
+        <button class="start-button"
+                [disabled]="isGroupMode && !isGroupNameValid"
+                (click)="startConversation()"
+                type="button">
+          @if (isGroupMode) {
+            Create Group
+          } @else {
+            Start Chat
+          }
+        </button>
+      </div>
+    }
   </div>
 </div>

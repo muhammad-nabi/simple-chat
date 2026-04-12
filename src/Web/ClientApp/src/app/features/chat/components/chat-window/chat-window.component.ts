@@ -1,8 +1,10 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, inject, ChangeDetectorRef } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { pairwise, startWith } from 'rxjs/operators';
+import { pairwise } from 'rxjs/operators';
 import { MessageBubbleComponent } from '../message-bubble/message-bubble.component';
+import { GroupMembersComponent } from '../group-members/group-members.component';
+import { InviteToGroupComponent } from '../invite-to-group/invite-to-group.component';
 import { MessageService } from '../../services/message.service';
 import { ConversationService } from '../../services/conversation.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -13,7 +15,7 @@ import { Conversation } from '../../models/conversation.model';
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [AsyncPipe, MessageBubbleComponent],
+  imports: [AsyncPipe, MessageBubbleComponent, GroupMembersComponent, InviteToGroupComponent],
   templateUrl: './chat-window.component.html',
   styleUrl: './chat-window.component.scss',
 })
@@ -22,8 +24,10 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   private readonly conversationService = inject(ConversationService);
   private readonly authService = inject(AuthService);
   private readonly signalRService = inject(SignalRService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('membersPanel') membersPanel!: GroupMembersComponent;
 
   messages: Message[] = [];
   loading = false;
@@ -31,6 +35,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   hasMore = false;
   hasNewMessages = false;
   selectedConversation: Conversation | null = null;
+  showMembersPanel = false;
+  showInviteDialog = false;
+  memberIds: string[] = [];
 
   private currentUserId: string | null = null;
   private shouldScrollToBottom = false;
@@ -55,10 +62,11 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       }
 
       this.messages = messages;
+      this.cdr.markForCheck();
     });
 
     const loadingSub = this.messageService.loading$.subscribe(
-      (loading: boolean) => this.loading = loading
+      (loading: boolean) => { this.loading = loading; this.cdr.markForCheck(); }
     );
 
     const loadingHistorySub = this.messageService.loadingHistory$.subscribe(
@@ -77,7 +85,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     );
 
     const convSub = this.conversationService.selectedConversation.pipe(
-      startWith(null as Conversation | null),
       pairwise(),
     ).subscribe(([prev, current]) => {
       // Save scroll position of previous conversation
@@ -89,6 +96,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       this.hasNewMessages = false;
 
       if (current) {
+        this.messageService.clearMessages();
         this.messageService.loadMessages(current.id);
         // Restore saved scroll position or scroll to bottom for first visit
         const savedPosition = this.messageService.getScrollPosition(current.id);
@@ -177,18 +185,42 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     return this.messageService.isOwnMessage(senderId);
   }
 
+  isSystemMessage(message: Message): boolean {
+    return message.messageType === 'System';
+  }
+
+  isGroupConversation(): boolean {
+    return this.selectedConversation?.type === 'Group';
+  }
+
   shouldShowSender(index: number): boolean {
+    if (!this.isGroupConversation()) {
+      return false;
+    }
+    const message = this.messages[index];
+    if (message.messageType === 'System') {
+      return false;
+    }
     if (index === 0) {
       return true;
     }
-    return this.messages[index].senderId !== this.messages[index - 1].senderId;
+    const prev = this.messages[index - 1];
+    if (prev.messageType === 'System') {
+      return true;
+    }
+    return message.senderId !== prev.senderId;
   }
 
   isConsecutiveMessage(index: number): boolean {
     if (index === 0) {
       return false;
     }
-    return this.messages[index].senderId === this.messages[index - 1].senderId;
+    const message = this.messages[index];
+    const prev = this.messages[index - 1];
+    if (message.messageType === 'System' || prev.messageType === 'System') {
+      return false;
+    }
+    return message.senderId === prev.senderId;
   }
 
   isFirstSentMessage(): boolean {
@@ -198,6 +230,41 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   trackByMessageId(_index: number, message: Message): number {
     return message.id;
+  }
+
+  toggleMembersPanel(): void {
+    this.showMembersPanel = !this.showMembersPanel;
+    if (!this.showMembersPanel) {
+      this.showInviteDialog = false;
+    }
+  }
+
+  onInviteRequested(): void {
+    if (this.membersPanel) {
+      this.memberIds = this.membersPanel.getMemberIds();
+    }
+    this.showInviteDialog = true;
+  }
+
+  onLeftGroup(): void {
+    this.showMembersPanel = false;
+    this.showInviteDialog = false;
+  }
+
+  onMembersPanelClosed(): void {
+    this.showMembersPanel = false;
+    this.showInviteDialog = false;
+  }
+
+  onInvited(): void {
+    this.showInviteDialog = false;
+    if (this.membersPanel) {
+      this.membersPanel.loadMembers();
+    }
+  }
+
+  onInviteClosed(): void {
+    this.showInviteDialog = false;
   }
 
   private isNearBottom(): boolean {

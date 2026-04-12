@@ -26,6 +26,21 @@ public class CreateConversationCommandHandler : IRequestHandler<CreateConversati
         string currentUserId = _currentUser.Id
             ?? throw new UnauthorizedAccessException();
 
+        bool isGroupConversation = request.ParticipantIds != null && request.ParticipantIds.Count > 0;
+
+        if (isGroupConversation)
+        {
+            return await HandleGroupConversation(request, currentUserId, cancellationToken);
+        }
+
+        return await HandlePrivateConversation(request, currentUserId, cancellationToken);
+    }
+
+    private async Task<long> HandlePrivateConversation(
+        CreateConversationCommand request, string currentUserId, CancellationToken cancellationToken)
+    {
+        Guard.Against.NullOrEmpty(request.OtherUserId);
+
         if (request.OtherUserId == currentUserId)
         {
             throw new Common.Exceptions.ValidationException(
@@ -73,6 +88,78 @@ public class CreateConversationCommandHandler : IRequestHandler<CreateConversati
         });
 
         _db.Conversations.Add(conversation);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return conversation.Id;
+    }
+
+    private async Task<long> HandleGroupConversation(
+        CreateConversationCommand request, string currentUserId, CancellationToken cancellationToken)
+    {
+        Guard.Against.NullOrEmpty(request.ParticipantIds);
+        Guard.Against.NullOrEmpty(request.GroupName);
+
+        // Validate no self-inclusion in participant list
+        if (request.ParticipantIds.Contains(currentUserId))
+        {
+            throw new Common.Exceptions.ValidationException(
+                new[] { new FluentValidation.Results.ValidationFailure("ParticipantIds", "You are automatically added to the group. Do not include yourself in the participant list.") });
+        }
+
+        // Validate all participants exist
+        foreach (string participantId in request.ParticipantIds)
+        {
+            bool exists = await _identityService.UserExistsAsync(participantId, cancellationToken);
+            if (!exists)
+            {
+                throw new Common.Exceptions.NotFoundException("User", participantId);
+            }
+        }
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        Conversation conversation = new()
+        {
+            Type = ConversationType.Group,
+            Name = request.GroupName!.Trim(),
+            CreatedById = currentUserId,
+        };
+
+        // Add creator as participant
+        conversation.Participants.Add(new ConversationParticipant
+        {
+            UserId = currentUserId,
+            JoinedAt = now,
+        });
+
+        // Add all other participants
+        foreach (string participantId in request.ParticipantIds)
+        {
+            conversation.Participants.Add(new ConversationParticipant
+            {
+                UserId = participantId,
+                JoinedAt = now,
+            });
+        }
+
+        // Resolve creator display name for system message
+        Dictionary<string, string> displayNames = await _identityService
+            .GetDisplayNamesByIdsAsync(new[] { currentUserId }, cancellationToken);
+        string creatorDisplayName = displayNames.GetValueOrDefault(currentUserId, "Unknown");
+
+        Message systemMessage = new()
+        {
+            Conversation = conversation,
+            SenderId = currentUserId,
+            Content = $"{creatorDisplayName} created the group",
+            SentAt = now,
+            MessageType = MessageType.System,
+        };
+
+        conversation.LastMessageAt = now;
+
+        _db.Conversations.Add(conversation);
+        _db.Messages.Add(systemMessage);
         await _db.SaveChangesAsync(cancellationToken);
 
         return conversation.Id;

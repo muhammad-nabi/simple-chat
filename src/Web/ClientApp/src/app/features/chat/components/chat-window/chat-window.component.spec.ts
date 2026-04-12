@@ -28,6 +28,19 @@ describe('ChatWindowComponent', () => {
     unreadCount: 0,
   };
 
+  const mockGroupConversation: Conversation = {
+    id: 2,
+    type: 'Group',
+    name: 'Engineering Team',
+    lastMessagePreview: 'Hello team',
+    lastMessageAt: '2026-04-01T12:00:00Z',
+    otherParticipants: [
+      { userId: 'user-2', displayName: 'Alice' },
+      { userId: 'user-3', displayName: 'Bob' },
+    ],
+    unreadCount: 0,
+  };
+
   const mockMessages: Message[] = [
     { id: 1, conversationId: 1, senderId: 'user-2', senderDisplayName: 'Alice', content: 'Hey', sentAt: '2026-04-01T08:00:00Z', messageType: 'Text' },
     { id: 2, conversationId: 1, senderId: 'user-1', senderDisplayName: 'Me', content: 'Hello!', sentAt: '2026-04-01T08:01:00Z', messageType: 'Text' },
@@ -157,12 +170,38 @@ describe('ChatWindowComponent', () => {
     expect(mockMessageService['clearMessages']).toHaveBeenCalled();
   });
 
+  it('should clear messages before loading when switching between conversations', () => {
+    const callOrder: string[] = [];
+    (mockMessageService['clearMessages'] as jest.Mock).mockImplementation(() => callOrder.push('clear'));
+    (mockMessageService['loadMessages'] as jest.Mock).mockImplementation(() => callOrder.push('load'));
+
+    selectedConvSubject.next(mockConversation);
+    fixture.detectChanges();
+    callOrder.length = 0; // reset after initial load
+
+    selectedConvSubject.next(mockGroupConversation);
+    fixture.detectChanges();
+
+    expect(callOrder).toEqual(['clear', 'load']);
+    expect(mockMessageService['loadMessages']).toHaveBeenCalledWith(2);
+  });
+
   describe('message grouping', () => {
-    it('should show sender for first message', () => {
+    it('should not show sender in private conversations', () => {
+      component.selectedConversation = mockConversation; // type: 'Private'
+      component.messages = mockMessages;
+      expect(component.shouldShowSender(0)).toBe(false);
+      expect(component.shouldShowSender(1)).toBe(false);
+    });
+
+    it('should show sender for first message in group conversation', () => {
+      component.selectedConversation = mockGroupConversation;
+      component.messages = mockMessages;
       expect(component.shouldShowSender(0)).toBe(true);
     });
 
-    it('should show sender when different from previous', () => {
+    it('should show sender when different from previous in group', () => {
+      component.selectedConversation = mockGroupConversation;
       component.messages = mockMessages;
       // message[1] (user-1) differs from message[0] (user-2)
       expect(component.shouldShowSender(1)).toBe(true);
@@ -174,6 +213,7 @@ describe('ChatWindowComponent', () => {
     });
 
     it('should flag consecutive same-sender messages', () => {
+      component.selectedConversation = mockGroupConversation;
       const consecutiveMessages: Message[] = [
         { ...mockMessages[0], id: 1, senderId: 'user-2' },
         { ...mockMessages[1], id: 2, senderId: 'user-2' },
@@ -181,6 +221,75 @@ describe('ChatWindowComponent', () => {
       component.messages = consecutiveMessages;
       expect(component.isConsecutiveMessage(1)).toBe(true);
       expect(component.shouldShowSender(1)).toBe(false);
+    });
+  });
+
+  describe('system messages', () => {
+    const systemMessage: Message = {
+      id: 10, conversationId: 1, senderId: 'user-1', senderDisplayName: 'Me',
+      content: 'Me created the group', sentAt: '2026-04-01T08:00:00Z', messageType: 'System',
+    };
+
+    it('should identify system messages', () => {
+      expect(component.isSystemMessage(systemMessage)).toBe(true);
+      expect(component.isSystemMessage(mockMessages[0])).toBe(false);
+    });
+
+    it('should render system message as centered pill', () => {
+      component.selectedConversation = mockGroupConversation;
+      messagesSubject.next([systemMessage, ...mockMessages]);
+      fixture.detectChanges();
+
+      const pill: HTMLElement | null = fixture.nativeElement.querySelector('.system-message');
+      expect(pill).toBeTruthy();
+      expect(pill?.textContent?.trim()).toBe('Me created the group');
+      expect(pill?.hasAttribute('role')).toBe(false);
+    });
+
+    it('should not render system messages as message bubbles', () => {
+      component.selectedConversation = mockGroupConversation;
+      messagesSubject.next([systemMessage, ...mockMessages]);
+      fixture.detectChanges();
+
+      const bubbles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('app-message-bubble');
+      expect(bubbles.length).toBe(3); // only the 3 text messages, not the system message
+    });
+
+    it('should break consecutive grouping around system messages', () => {
+      component.selectedConversation = mockGroupConversation;
+      const messagesWithSystem: Message[] = [
+        { ...mockMessages[0], id: 1, senderId: 'user-2', messageType: 'Text' },
+        { ...systemMessage, id: 2 },
+        { ...mockMessages[2], id: 3, senderId: 'user-2', messageType: 'Text' },
+      ];
+      component.messages = messagesWithSystem;
+
+      // System message breaks grouping — message after system should show sender
+      expect(component.isConsecutiveMessage(2)).toBe(false);
+      expect(component.shouldShowSender(2)).toBe(true);
+    });
+
+    it('should not show sender for system messages themselves', () => {
+      component.selectedConversation = mockGroupConversation;
+      component.messages = [systemMessage];
+      expect(component.shouldShowSender(0)).toBe(false);
+    });
+  });
+
+  describe('group conversation detection', () => {
+    it('should detect group conversation', () => {
+      component.selectedConversation = mockGroupConversation;
+      expect(component.isGroupConversation()).toBe(true);
+    });
+
+    it('should detect non-group conversation', () => {
+      component.selectedConversation = mockConversation;
+      expect(component.isGroupConversation()).toBe(false);
+    });
+
+    it('should return false when no conversation selected', () => {
+      component.selectedConversation = null;
+      expect(component.isGroupConversation()).toBe(false);
     });
   });
 

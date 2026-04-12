@@ -1,0 +1,63 @@
+<div class="browse-header">
+  <button class="back-button"
+          (click)="goBack()"
+          aria-label="Back to conversations">
+    <span class="back-icon">&larr;</span>
+    <span>Back</span>
+  </button>
+  <h2 class="browse-title">Browse Groups</h2>
+</div>
+
+@if (loading$ | async) {
+  <div class="skeleton-list" aria-busy="true">
+    @for (item of [1, 2, 3]; track item) {
+      <div class="skeleton-item" aria-hidden="true">
+        <div class="skeleton-avatar"></div>
+        <div class="skeleton-text">
+          <div class="skeleton-name"></div>
+          <div class="skeleton-preview"></div>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="group-list" role="list" aria-label="Available groups">
+    @for (group of groups$ | async; track group.id) {
+      <div class="group-item" role="listitem">
+        <app-avatar
+          [displayName]="group.name"
+          [userId]="group.id.toString()"
+          size="sidebar" />
+        <div class="group-info">
+          <div class="group-header">
+            <span class="group-name">{{ group.name }}</span>
+            @if (group.lastMessageAt) {
+              <span class="group-time">{{ group.lastMessageAt | relativeTime }}</span>
+            }
+          </div>
+          <div class="group-meta">
+            <span class="group-members">{{ group.participantCount }} members</span>
+            @if (group.lastMessagePreview) {
+              <span class="group-separator">&middot;</span>
+              <span class="group-preview">{{ group.lastMessagePreview }}</span>
+            }
+          </div>
+        </div>
+        <button class="join-button"
+                (click)="joinGroup(group)"
+                [disabled]="(joiningId$ | async) !== null"
+                aria-label="Join {{ group.name }}">
+          @if ((joiningId$ | async) === group.id) {
+            Joining...
+          } @else {
+            Join
+          }
+        </button>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <p>No groups to join right now. Create one!</p>
+      </div>
+    }
+  </div>
+}

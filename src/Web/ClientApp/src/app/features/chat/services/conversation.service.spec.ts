@@ -254,4 +254,62 @@ describe('ConversationService', () => {
       expect(error).toBe('Conversation created but failed to refresh list');
     });
   });
+
+  describe('createGroupConversation', () => {
+    it('should create group conversation with correct payload', () => {
+      let createdId: number | undefined;
+      service.conversationCreated.subscribe(id => createdId = id);
+
+      service.createGroupConversation(['user-2', 'user-3'], 'Engineering Team');
+
+      const createReq = httpMock.expectOne('/api/conversations');
+      expect(createReq.request.method).toBe('POST');
+      expect(createReq.request.body).toEqual({
+        participantIds: ['user-2', 'user-3'],
+        groupName: 'Engineering Team',
+      });
+      createReq.flush({ id: 20 } as CreateConversationResponse);
+
+      const loadReq = httpMock.expectOne('/api/conversations');
+      expect(loadReq.request.method).toBe('GET');
+      loadReq.flush(mockConversations);
+
+      expect(createdId).toBe(20);
+    });
+
+    it('should select the created group conversation after reload', () => {
+      let selected: Conversation | null = null;
+      service.selectedConversation.subscribe(c => selected = c);
+
+      const groupConversation: Conversation = {
+        id: 20,
+        type: 'Group',
+        name: 'Engineering Team',
+        lastMessagePreview: null,
+        lastMessageAt: null,
+        otherParticipants: [
+          { userId: 'user-2', displayName: 'Bob' },
+          { userId: 'user-3', displayName: 'Charlie' },
+        ],
+        unreadCount: 0,
+      };
+
+      service.createGroupConversation(['user-2', 'user-3'], 'Engineering Team');
+      httpMock.expectOne({ method: 'POST', url: '/api/conversations' }).flush({ id: 20 });
+      httpMock.expectOne({ method: 'GET', url: '/api/conversations' }).flush([groupConversation, ...mockConversations]);
+
+      expect(selected?.id).toBe(20);
+      expect(selected?.name).toBe('Engineering Team');
+    });
+
+    it('should set error on group creation failure', () => {
+      let error: string | null = null;
+      service.error.subscribe(e => error = e);
+
+      service.createGroupConversation(['user-2', 'user-3'], 'Test Group');
+      httpMock.expectOne('/api/conversations').flush('Error', { status: 500, statusText: 'Error' });
+
+      expect(error).toBe('Failed to create group conversation');
+    });
+  });
 });

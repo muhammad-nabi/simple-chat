@@ -127,3 +127,42 @@
 ## Deferred from: code review of story-3.9 (2026-04-02)
 
 - `loadConversations()` has no in-flight request cancellation [conversation.service.ts:51-64] — unlike MessageService.loadMessages() which cancels prior requests, loadConversations() creates overlapping HTTP subscriptions on rapid reconnects; pre-existing pattern (see also story 3.5 deferred item)
+
+## Deferred from: code review of 4-1-group-conversation-creation (2026-04-03)
+
+- Mutable `List<string>` in record command (`CreateConversationCommand.ParticipantIds`) should be `IReadOnlyList<string>` — breaks record value semantics; pre-existing pattern across codebase commands
+- No group conversation duplicate check — unlike private conversations, groups with identical name and members can be created repeatedly; acceptable for MVP, revisit if user feedback indicates issue
+- No loading/spinner state on Create Group button during submission — spec calls for "Loading state on submit (spinner in button)" but risk is low since dialog closes on success; add as UX polish pass
+
+## Deferred from: code review of 4-2-group-messaging-history (2026-04-03)
+
+- System message not published via MediatR notification (no real-time delivery to other participants) — becomes relevant when SignalR group-join for non-creators is addressed
+- Non-creator participants don't auto-join SignalR group for new conversations — pre-existing architecture limitation from Epic 3
+- System message appears in `lastMessagePreview` on conversation list sidebar — pre-existing query behavior in GetConversationsQueryHandler
+- No in-flight guard for concurrent create conversation requests — pre-existing pattern, same as deferred in story 3.5 and 3.8
+- System message counted as unread for non-creator participants — `GetConversationsQueryHandler` counts system messages in unread count; defer to Epic 5 (Story 5-3) which overhauls unread logic
+
+## Deferred from: code review of 4-3-browse-join-groups (2026-04-03)
+
+- Concurrent join race condition — no DB unique constraint on (ConversationId, UserId); two simultaneous join requests can both pass `alreadyParticipant` check and create duplicate participant rows; requires schema migration to add unique index
+- No pagination on `GetBrowseGroupsQuery` — loads all non-joined group conversations into memory; acceptable for small team app (5-200 users) per spec; revisit if group count grows significantly
+- SignalR join error silently swallowed in `conversation.service.ts` joinGroup() — user won't receive real-time messages until reconnect; pre-existing pattern (same as story 3.9 deferred item)
+- Null ordering instability in `GetBrowseGroupsQueryHandler` — groups with null `LastMessageAt` sort unpredictably; edge case for newly created groups with no messages
+- No error state display in browse groups UI — API failure shows empty list instead of error message; low impact UX polish item
+- No SignalR broadcast for "joined the group" system message — no domain event or MediatR notification published; same gap as "created the group" deferred from story 4-2
+
+## Deferred from: code review of 4-4-invite-users-leave-group (2026-04-03)
+
+- Invited user never joins SignalR group in current session — no mechanism to add invited user's active connection to SignalR group; pre-existing pattern (no domain event broadcast for V1); user must reconnect to receive real-time messages
+- InviteToGroup validates user existence with N+1 identity service calls — `UserExistsAsync` called per user in a loop; batch API would reduce round-trips; performance optimization for large invite lists
+- Concurrent double-leave can create duplicate system messages — no unique constraint on (ConversationId, UserId) removal; same deferred pattern as join race in story 4-3
+- Invite picker uses stale existingMemberIds snapshot — member list captured when panel opens, not refreshed when invite dialog opens; backend silently filters already-participants so no data corruption
+- GetGroupMembers has no pagination — loads all participants unbounded; acceptable for small groups, revisit if group sizes grow
+- Leave system message SenderId set to leaving user's ID instead of null/sentinel — display uses Content string not SenderId for system messages; cosmetic inconsistency
+
+## Deferred from: review of spec-fix-message-loading-state (2026-04-12)
+
+- Reconnect handler in chat-window.component.ts calls `loadMessages()` without `clearMessages()` first — `pendingMessageIds` from pre-disconnect optimistic sends not cleared; reconnect-delivered duplicates may be silently dropped
+- `clearMessages()` wipes `firstMessageSent` map for ALL conversations — not scoped to current conversation; `isFirstMessageInConversation()` returns true incorrectly after any conversation switch
+- Same-conversation re-selection triggers unnecessary `clearMessages()` + `loadMessages()` — no `prev.id === current.id` guard in pairwise subscription; causes flash of empty state
+- `clearMessages()` clears `pendingMessageIds` while optimistic-send `.then()` / `.catch()` callbacks are still in-flight — message may appear as duplicate after switching away and back

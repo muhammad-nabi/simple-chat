@@ -1,6 +1,7 @@
 import { Injectable, inject, DestroyRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Conversation } from '../models/conversation.model';
 import { SignalRService } from '../../../core/signalr/signalr.service';
 import { MessagePayload } from '../../../core/signalr/signalr.events';
@@ -8,6 +9,20 @@ import { AuthService } from '../../../core/services/auth.service';
 
 export interface CreateConversationResponse {
   id: number;
+}
+
+export interface BrowseGroupDto {
+  id: number;
+  name: string;
+  participantCount: number;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+}
+
+export interface GroupMemberDto {
+  userId: string;
+  displayName: string;
+  joinedAt: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -82,29 +97,110 @@ export class ConversationService {
     this._error$.next(null);
     this.http.post<CreateConversationResponse>('/api/conversations', { otherUserId }).subscribe({
       next: (response: CreateConversationResponse) => {
-        // Join SignalR group for the new conversation
-        this.signalRService.joinConversation(response.id).catch(() => {
+        this.handleConversationCreated(response.id);
+      },
+      error: () => {
+        this._error$.next('Failed to create conversation');
+      },
+    });
+  }
+
+  createGroupConversation(participantIds: string[], groupName: string): void {
+    this._error$.next(null);
+    this.http.post<CreateConversationResponse>('/api/conversations', { participantIds, groupName }).subscribe({
+      next: (response: CreateConversationResponse) => {
+        this.handleConversationCreated(response.id);
+      },
+      error: () => {
+        this._error$.next('Failed to create group conversation');
+      },
+    });
+  }
+
+  loadBrowseGroups(): Observable<BrowseGroupDto[]> {
+    return this.http.get<BrowseGroupDto[]>('/api/conversations/browse');
+  }
+
+  joinGroup(conversationId: number): void {
+    this._error$.next(null);
+    this.http.post(`/api/conversations/${conversationId}/join`, null).subscribe({
+      next: () => {
+        // Join SignalR group for real-time messages immediately
+        this.signalRService.joinConversation(conversationId).catch(() => {
           // Non-critical — messages may not arrive in real-time until reconnect
         });
-        // Reload conversations, then select the new one
+        // Reload conversations, then select the joined group
         this.http.get<Conversation[]>('/api/conversations').subscribe({
           next: (conversations: Conversation[]) => {
             this._conversations$.next(conversations);
-            const created = conversations.find((c: Conversation) => c.id === response.id);
-            if (created) {
-              this._selectedConversation$.next(created);
+            const joined = conversations.find((c: Conversation) => c.id === conversationId);
+            if (joined) {
+              this._selectedConversation$.next(joined);
             }
-            this._conversationCreated$.next(response.id);
+            this._conversationCreated$.next(conversationId);
           },
           error: () => {
-            // Conversations failed to reload — still emit so dialog closes, but warn
-            this._error$.next('Conversation created but failed to refresh list');
-            this._conversationCreated$.next(response.id);
+            this._error$.next('Joined group but failed to refresh list');
+            this._conversationCreated$.next(conversationId);
           },
         });
       },
       error: () => {
-        this._error$.next('Failed to create conversation');
+        this._error$.next('Failed to join group');
+      },
+    });
+  }
+
+  getGroupMembers(conversationId: number): Observable<GroupMemberDto[]> {
+    return this.http.get<GroupMemberDto[]>(`/api/conversations/${conversationId}/members`);
+  }
+
+  inviteToGroup(conversationId: number, userIds: string[]): Observable<void> {
+    return this.http.post<void>(`/api/conversations/${conversationId}/invite`, { userIds }).pipe(
+      tap(() => {
+        this.loadConversations();
+      }),
+    );
+  }
+
+  leaveGroup(conversationId: number): Observable<void> {
+    return this.http.post<void>(`/api/conversations/${conversationId}/leave`, null).pipe(
+      tap(() => {
+        // Leave SignalR group
+        this.signalRService.leaveConversation(conversationId).catch(() => {
+          // Non-critical — will stop receiving on next reconnect
+        });
+        // Remove from local state
+        const current = this._conversations$.value;
+        this._conversations$.next(current.filter((c: Conversation) => c.id !== conversationId));
+        // Clear selection if leaving current conversation
+        const selected = this._selectedConversation$.value;
+        if (selected && selected.id === conversationId) {
+          this._selectedConversation$.next(null);
+        }
+      }),
+    );
+  }
+
+  private handleConversationCreated(conversationId: number): void {
+    // Join SignalR group for the new conversation
+    this.signalRService.joinConversation(conversationId).catch(() => {
+      // Non-critical — messages may not arrive in real-time until reconnect
+    });
+    // Reload conversations, then select the new one
+    this.http.get<Conversation[]>('/api/conversations').subscribe({
+      next: (conversations: Conversation[]) => {
+        this._conversations$.next(conversations);
+        const created = conversations.find((c: Conversation) => c.id === conversationId);
+        if (created) {
+          this._selectedConversation$.next(created);
+        }
+        this._conversationCreated$.next(conversationId);
+      },
+      error: () => {
+        // Conversations failed to reload — still emit so dialog closes, but warn
+        this._error$.next('Conversation created but failed to refresh list');
+        this._conversationCreated$.next(conversationId);
       },
     });
   }

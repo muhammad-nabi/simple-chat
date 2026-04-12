@@ -1,68 +1,80 @@
-<div class="list-header">
-  <button class="new-chat-button"
-          (click)="openNewChat()"
-          aria-label="Start new chat">
-    <span class="new-chat-icon">+</span>
-    <span class="new-chat-text">New Chat</span>
-  </button>
-</div>
-
-@if (loading$ | async) {
-  <div class="skeleton-list" aria-busy="true">
-    @for (item of [1, 2, 3, 4, 5]; track item) {
-      <div class="skeleton-item" aria-hidden="true">
-        <div class="skeleton-avatar"></div>
-        <div class="skeleton-text">
-          <div class="skeleton-name"></div>
-          <div class="skeleton-preview"></div>
-        </div>
-      </div>
-    }
-  </div>
+@if (showBrowseGroups) {
+  <app-browse-groups
+    (groupJoined)="onGroupJoined()"
+    (closed)="onBrowseGroupsClosed()" />
 } @else {
-  <div
-    class="conversation-list"
-    role="listbox"
-    aria-label="Conversations">
-    @for (conversation of conversations$ | async; track conversation.id) {
-      <div
-        class="conversation-item"
-        role="option"
-        tabindex="0"
-        [attr.aria-selected]="isSelected(conversation, (selectedConversation$ | async) ?? null)"
-        [class.active]="isSelected(conversation, (selectedConversation$ | async) ?? null)"
-        [class.unread]="conversation.unreadCount > 0"
-        (click)="selectConversation(conversation)"
-        (keydown.enter)="selectConversation(conversation)">
-        <app-avatar
-          [displayName]="getDisplayName(conversation)"
-          [userId]="getAvatarUserId(conversation)"
-          size="sidebar" />
-        <div class="conversation-info">
-          <div class="conversation-header">
-            <span class="conversation-name">{{ getDisplayName(conversation) }}</span>
-            @if (conversation.lastMessageAt) {
-              <span class="conversation-time">{{ conversation.lastMessageAt | relativeTime }}</span>
-            }
-          </div>
-          <div class="conversation-footer">
-            <span class="conversation-preview">{{ conversation.lastMessagePreview }}</span>
-            @if (conversation.unreadCount > 0) {
-              <app-unread-badge [count]="conversation.unreadCount" />
-            }
+  <div class="list-header">
+    <button class="browse-groups-button"
+            (click)="openBrowseGroups()"
+            aria-label="Browse groups">
+      Browse Groups
+    </button>
+    <button class="new-chat-button"
+            (click)="openNewChat()"
+            aria-label="Start new chat">
+      <span class="new-chat-icon">+</span>
+      <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  @if (loading$ | async) {
+    <div class="skeleton-list" aria-busy="true">
+      @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="skeleton-item" aria-hidden="true">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-text">
+            <div class="skeleton-name"></div>
+            <div class="skeleton-preview"></div>
           </div>
         </div>
-      </div>
-    } @empty {
-      <div class="empty-state">
-        <p>No conversations yet</p>
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  } @else {
+    <div
+      class="conversation-list"
+      role="listbox"
+      aria-label="Conversations">
+      @for (conversation of conversations$ | async; track conversation.id) {
+        <div
+          class="conversation-item"
+          role="option"
+          tabindex="0"
+          [attr.aria-selected]="isSelected(conversation, (selectedConversation$ | async) ?? null)"
+          [class.active]="isSelected(conversation, (selectedConversation$ | async) ?? null)"
+          [class.unread]="conversation.unreadCount > 0"
+          (click)="selectConversation(conversation)"
+          (keydown.enter)="selectConversation(conversation)">
+          <app-avatar
+            [displayName]="getDisplayName(conversation)"
+            [userId]="getAvatarUserId(conversation)"
+            size="sidebar" />
+          <div class="conversation-info">
+            <div class="conversation-header">
+              <span class="conversation-name">{{ getDisplayName(conversation) }}</span>
+              @if (conversation.lastMessageAt) {
+                <span class="conversation-time">{{ conversation.lastMessageAt | relativeTime }}</span>
+              }
+            </div>
+            <div class="conversation-footer">
+              <span class="conversation-preview">{{ conversation.lastMessagePreview }}</span>
+              @if (conversation.unreadCount > 0) {
+                <app-unread-badge [count]="conversation.unreadCount" />
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>No conversations yet</p>
+        </div>
+      }
+    </div>
+  }
 
-@if (showNewChatDialog) {
-  <app-new-chat-dialog
-    (userSelected)="onNewChatUserSelected($event)"
-    (closed)="onNewChatClosed()" />
+  @if (showNewChatDialog) {
+    <app-new-chat-dialog
+      (userSelected)="onNewChatUserSelected($event)"
+      (groupCreated)="onNewChatGroupCreated($event)"
+      (closed)="onNewChatClosed()" />
+  }
 }

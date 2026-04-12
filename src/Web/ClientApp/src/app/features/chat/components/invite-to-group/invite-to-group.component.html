@@ -1,0 +1,70 @@
+<div class="invite-overlay">
+  <div class="invite-dialog">
+    <div class="dialog-header">
+      <h3>Invite to group</h3>
+      <button class="close-btn" (click)="onCancel()" aria-label="Close invite dialog">&times;</button>
+    </div>
+
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search users..."
+        [(ngModel)]="filterText"
+        aria-label="Search users to invite"
+      />
+    </div>
+
+    @if (loading$ | async) {
+      <div class="loading-skeleton" aria-busy="true">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton-item" aria-hidden="true">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-text"></div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="user-list" role="listbox" aria-label="Available users">
+        @for (user of filteredUsers; track user.userId) {
+          <button
+            class="user-item"
+            [class.selected]="isSelected(user.userId)"
+            (click)="toggleUser(user.userId)"
+            role="option"
+            [attr.aria-selected]="isSelected(user.userId)"
+          >
+            <app-avatar [displayName]="user.displayName" [userId]="user.userId" size="members"></app-avatar>
+            <span class="user-name">{{ user.displayName }}</span>
+            @if (isSelected(user.userId)) {
+              <span class="checkmark" aria-hidden="true">&#10003;</span>
+            }
+          </button>
+        }
+        @if (filteredUsers.length === 0) {
+          <div class="empty-state">No users available to invite</div>
+        }
+      </div>
+    }
+
+    <div class="dialog-footer">
+      @if (selectedUserIds.length > 0) {
+        <span class="selected-count">{{ selectedUserIds.length }} selected</span>
+      }
+      <div class="footer-actions">
+        <button class="cancel-btn" (click)="onCancel()">Cancel</button>
+        <button
+          class="invite-btn"
+          (click)="onInvite()"
+          [disabled]="selectedUserIds.length === 0 || (inviting$ | async)"
+        >
+          @if (inviting$ | async) {
+            Inviting...
+          } @else {
+            Invite
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

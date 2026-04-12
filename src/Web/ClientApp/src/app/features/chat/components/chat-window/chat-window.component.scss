@@ -9,6 +9,52 @@
   background-color: t.$color-chat-bg;
 }
 
+// Chat header for group conversations
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$space-sm t.$space-lg;
+  border-bottom: 1px solid t.$color-divider;
+  background-color: t.$color-surface;
+  flex-shrink: 0;
+}
+
+.chat-header-name {
+  font-size: t.$font-size-body-lg;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.members-toggle-btn {
+  padding: t.$space-xs t.$space-md;
+  background: none;
+  color: t.$color-primary;
+  border: 1px solid t.$color-primary;
+  border-radius: t.$radius-md;
+  font-size: t.$font-size-body-sm;
+  font-weight: t.$font-weight-medium;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: rgba(t.$color-primary, 0.08);
+  }
+
+  &.active {
+    background-color: t.$color-primary;
+    color: t.$color-text-inverse;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-primary;
+    outline-offset: 2px;
+  }
+}
+
 .empty-state {
   display: flex;
   align-items: center;
@@ -68,6 +114,18 @@
     animation: none;
     background: t.$color-surface-hover;
   }
+}
+
+// System messages — centered gray pill
+.system-message {
+  align-self: center;
+  background-color: t.$color-surface-hover;
+  color: t.$color-text-secondary;
+  font-size: t.$font-size-body-sm;
+  border-radius: t.$radius-full;
+  padding: t.$space-xs t.$space-md;
+  margin: t.$space-sm 0;
+  text-align: center;
 }
 
 // Loading spinner for history
