@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { PresenceService } from './core/presence/presence.service';
 
 @Component({
   selector: 'app-root',
@@ -12,4 +13,7 @@ import { RouterOutlet } from '@angular/router';
     </main>
   `,
 })
-export class AppComponent {}
+export class AppComponent {
+  // Inject to trigger singleton instantiation — PresenceService self-manages via auth state
+  private readonly _presence = inject(PresenceService);
+}

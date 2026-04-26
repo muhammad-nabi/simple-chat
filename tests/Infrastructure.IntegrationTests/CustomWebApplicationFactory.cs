@@ -88,7 +88,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             EXEC sp_executesql @sql;
             """);
 
-        // Clear Redis session data
+        // Clear Redis session and presence data
         var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
         var db = redis.GetDatabase();
         var server = redis.GetServer(redis.GetEndPoints().First());
@@ -96,5 +96,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             await db.KeyDeleteAsync(key);
         await foreach (var key in server.KeysAsync(pattern: "user-sessions:*"))
             await db.KeyDeleteAsync(key);
+        await foreach (var key in server.KeysAsync(pattern: "presence:*"))
+            await db.KeyDeleteAsync(key);
+        await db.KeyDeleteAsync("online_users");
     }
 }

@@ -1,5 +1,5 @@
 # generated: 2026-03-28
-# last_updated: 2026-04-12
+# last_updated: 2026-04-17
 # project: simple-chat
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-28
-last_updated: 2026-04-12
+last_updated: 2026-04-17
 project: simple-chat
 
 project_key: NOKEY
@@ -82,8 +82,8 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Presence & Notifications
-  epic-5: backlog
-  5-1-presence-backend-redis-heartbeat-ttl: backlog
+  epic-5: in-progress
+  5-1-presence-backend-redis-heartbeat-ttl: done
   5-2-presence-ui-online-users-panel: backlog
   5-3-unread-tracking-notification-indicators: backlog
   epic-5-retrospective: optional

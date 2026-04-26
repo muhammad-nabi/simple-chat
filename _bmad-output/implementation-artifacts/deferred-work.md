@@ -166,3 +166,15 @@
 - `clearMessages()` wipes `firstMessageSent` map for ALL conversations — not scoped to current conversation; `isFirstMessageInConversation()` returns true incorrectly after any conversation switch
 - Same-conversation re-selection triggers unnecessary `clearMessages()` + `loadMessages()` — no `prev.id === current.id` guard in pairwise subscription; causes flash of empty state
 - `clearMessages()` clears `pendingMessageIds` while optimistic-send `.then()` / `.catch()` callbacks are still in-flight — message may appear as duplicate after switching away and back
+
+## Deferred from: code review of story-5-1 (2026-04-17)
+
+- Lazy-prune TOCTOU race in GetOnlineUsersQueryHandler — SMEMBERS→GET→SREM can evict a user whose heartbeat re-added them in the window; self-heals next heartbeat (at most one missed poll). Lua/MULTI atomic check-and-remove is the proper fix
+- N+1 Redis round-trips in GetOnlineUsersQueryHandler — one GET per set member; batch via pipelining/MGET when scale demands. Flow is spec-endorsed
+- `online_users` Redis Set has no TTL — grows unboundedly if `/online` is rarely called. Periodic SSCAN-based cleanup or per-user sorted-set keyed by expiry would address
+- Heartbeat handler hits Identity DB every 60s per user to resolve display name — cache in JWT claim or short-TTL Redis entry to reduce SQL pressure under steady state
+- Partial-write race between `SetAsync` (presence:{id}) and `SetAddAsync` (online_users) — no atomic MULTI; if the SADD fails after SET succeeds, user ghost-key sits until TTL expires. Self-heals on next heartbeat
+- Frontend PresenceService has no Page Visibility / `visibilitychange` / `scroll` handling, and multiple tabs each heartbeat independently — status can flap Online↔Away across tabs. BroadcastChannel coordination + visibility hook would stabilize
+- No backoff/circuit-breaker on 401/429/5xx heartbeat errors — `console.error` only; client keeps hammering at 60s interval during brownouts
+- No in-flight guard on heartbeat/poll intervals — slow network causes overlapping POSTs/GETs; consider `switchMap` or an in-flight flag
+- `ResetDatabaseAsync` allow-lists specific Redis key patterns (`session:*`, `user-sessions:*`, `presence:*`, `online_users`) — future key types will silently leak across integration tests. Consider `FLUSHDB` on a dedicated test DB

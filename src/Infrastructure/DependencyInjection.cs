@@ -97,5 +97,6 @@ public static class DependencyInjection
         builder.Services.AddScoped<IAuthenticationProvider, BcryptAuthenticationProvider>();
         builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
         builder.Services.AddScoped<ISessionService, RedisSessionService>();
+        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
     }
 }
